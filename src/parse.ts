@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: <explanation> */
 import type { Selmaho, Token } from "./tokenize";
 import type {
 	Text,
@@ -42,6 +43,16 @@ import type {
 	Selbri1,
 	Selbri2,
 	Selbri3,
+	Selbri4,
+	Selbri5,
+	Selbri6,
+	TanruUnit1,
+	TanruUnit2,
+	SumtiTail,
+	SumtiTail1,
+	BrivlaWithFrees,
+	Span,
+	Naku,
 } from "./grammar";
 
 class ParseError extends Error {
@@ -53,6 +64,13 @@ class ParseError extends Error {
 	}
 }
 
+class Unsupported extends Error {
+	constructor(explanation: string) {
+		super(explanation);
+		this.name = "Unsupported";
+	}
+}
+
 interface TerbriState {
 	x: number;
 	// Bitset of filled positions
@@ -60,8 +78,8 @@ interface TerbriState {
 }
 
 export class Parser {
-	private tokens: Token[];
-	private index: TokenIndex;
+	public readonly tokens: Token[];
+	public index: TokenIndex;
 
 	constructor(tokens: Token[]) {
 		this.tokens = tokens;
@@ -288,14 +306,129 @@ export class Parser {
 		};
 	}
 
+	private isVerbAhead(): boolean {
+		return (
+			(this.isAhead(["NAhE"]) && !this.isAhead(["NAhE", "BO"])) ||
+			this.isAhead(["BRIVLA"]) ||
+			this.isAhead(["GOhA"]) ||
+			this.isAhead(["KE"]) || // really?
+			this.isAhead(["ME"]) || // TODO: moi, tricky lookahead (.i mi panononono da/moi)
+			this.isAhead(["SE"]) ||
+			this.isAhead(["JAI"]) ||
+			this.isAhead(["NU"])
+		);
+	}
+
 	public parseSelbri3(): Selbri3 {
-		const selbri4 = this.parseSelbri4();
+		const first = this.parseSelbri4();
+		const tanru: Selbri4[] & { 0: Selbri4 } = [first];
+		let end = first.end;
+
+		while (this.isVerbAhead()) {
+			const next = this.parseSelbri4();
+			end = next.end;
+			tanru.push(next);
+		}
+
 		return {
 			type: "selbri-3",
-			start: selbri4.start,
-			end: selbri4.end,
-			selbri4s: [selbri4],
+			start: first.start,
+			end,
+			selbri4s: tanru,
 		};
+	}
+
+	public parseSelbri4(): Selbri4 {
+		const selbri5 = this.parseSelbri5();
+		return {
+			type: "selbri-4",
+			start: selbri5.start,
+			end: selbri5.end,
+			first: selbri5,
+		};
+	}
+
+	public parseSelbri5(): Selbri5 {
+		const selbri6 = this.parseSelbri6();
+		return {
+			type: "selbri-5",
+			start: selbri6.start,
+			end: selbri6.end,
+			first: selbri6,
+		};
+	}
+
+	public parseSelbri6(): Selbri6 {
+		const tanruUnit = this.parseTanruUnit();
+		return {
+			type: "selbri-6",
+			start: tanruUnit.start,
+			end: tanruUnit.end,
+			tanruUnit,
+		};
+	}
+
+	public parseTanruUnit(): TanruUnit {
+		const tanruUnit1 = this.parseTanruUnit1();
+		return {
+			type: "tanru-unit",
+			start: tanruUnit1.start,
+			end: tanruUnit1.end,
+			tanruUnit1,
+		};
+	}
+
+	public parseTanruUnit1(): TanruUnit1 {
+		const tanruUnit2 = this.parseTanruUnit2();
+		return {
+			type: "tanru-unit-1",
+			start: tanruUnit2.start,
+			end: tanruUnit2.end,
+			tanruUnit2,
+		};
+	}
+
+	public parseTanruUnit2(): TanruUnit2 {
+		const token = this.peekToken();
+		if (!token) throw new ParseError("expected tanru-unit, got eof");
+
+		if (token?.selmaho === "BRIVLA") {
+			const brivla = this.parseBrivlaWithFrees();
+			return {
+				type: "tu-brivla",
+				start: token.index,
+				end: token.index,
+				brivla,
+			};
+		}
+
+		if (token?.selmaho === "NU") {
+			const nu = this.tryParseCmavoWithFrees("NU")!;
+			const subsentence = this.parseSubsentence();
+			const kei = this.tryParseCmavoWithFrees("KEI");
+			return {
+				type: "tu-nu",
+				start: nu.start,
+				end: kei?.end ?? subsentence.end,
+				nu,
+				subsentence,
+				kei,
+			};
+		}
+
+		if (token?.selmaho === "SE") {
+			const se = this.tryParseCmavoWithFrees("SE")!;
+			const inner = this.parseTanruUnit2();
+			return {
+				type: "tu-se",
+				start: se.start,
+				end: inner.end,
+				se,
+				inner,
+			};
+		}
+
+		throw new Unsupported(`Unsupported tanru-unit-2: ${token?.selmaho}`);
 	}
 
 	public parseSumti(): Sumti<Floating> {
@@ -309,7 +442,7 @@ export class Parser {
 		return {
 			type: "sumti",
 			start: sumti1.start,
-			end: sumti1.end,
+			end: relativeClauses?.end ?? sumti1.end,
 			sumti1,
 			vuho,
 			relativeClauses,
@@ -363,8 +496,8 @@ export class Parser {
 		const relativeClauses = this.tryParseRelativeClauses();
 		return {
 			type: "sumti-5-large",
-			start: sumti6.start,
-			end: sumti6.end,
+			start: outerQuantifier?.start ?? sumti6.start,
+			end: relativeClauses?.end ?? sumti6.end,
 			outerQuantifier,
 			sumti6,
 			relativeClauses,
@@ -395,7 +528,7 @@ export class Parser {
 
 	public parseNamcu(): Namcu {
 		const first = this.parsePa();
-		let end = first.end;
+		const end = first.end;
 		const rest: (Pa | LerfuWord)[] = [];
 		while (true) {
 			const next = undefined; // TODO this.tryParsePaLerfuWord();
@@ -449,7 +582,69 @@ export class Parser {
 			const koha = this.tryParseCmavoWithFrees("KOhA")!;
 			return { type: "sumti-6-koha", start: koha.start, end: koha.end, koha };
 		}
-		throw new ParseError("Unsupported sumti6");
+
+		if (token.selmaho === "LE") {
+			const le = this.tryParseCmavoWithFrees("LE")!;
+			const sumtiTail = this.parseSumtiTail();
+			const ku = this.tryParseCmavoWithFrees("KU");
+			return {
+				type: "sumti-6-le",
+				start: le.start,
+				end: ku?.end ?? sumtiTail.end,
+				le,
+				sumtiTail,
+				ku,
+			};
+		}
+
+		throw new Unsupported(`Unsupported sumti6 ${token.selmaho}`);
+	}
+
+	private isAhead(selmahos: Selmaho[]): boolean {
+		return selmahos.every((s, i) => this.tokens[this.index + i]?.selmaho === s);
+	}
+
+	private isSumti6Ahead(): boolean {
+		return (
+			this.isAhead(["LAhE"]) ||
+			this.isAhead(["NAhE", "BO"]) ||
+			this.isAhead(["KOhA"]) ||
+			this.isAhead(["BY"]) ||
+			this.isAhead(["BU"]) || // TODO: actually handle word+bu...
+			this.isAhead(["LA"]) ||
+			this.isAhead(["LE"]) ||
+			this.isAhead(["LI"]) ||
+			this.isAhead(["ZO"]) || // TODO: magic
+			this.isAhead(["LU"]) ||
+			this.isAhead(["LOhU"]) ||
+			this.isAhead(["ZOI"]) // TODO: magic
+		);
+	}
+
+	public parseSumtiTail(): SumtiTail {
+		const owner = this.isSumti6Ahead() ? this.parseSumti6() : undefined;
+		const relativeClauses = this.tryParseRelativeClauses();
+		const tail = this.parseSumtiTail1();
+		return {
+			type: "sumti-tail",
+			start: owner?.start ?? tail.start,
+			end: tail.end,
+			owner,
+			relativeClauses,
+			tail,
+		};
+	}
+
+	public parseSumtiTail1(): SumtiTail1 {
+		const selbri = this.parseSelbri();
+		const relativeClauses = this.tryParseRelativeClauses();
+		return {
+			type: "sumti-tail-1",
+			start: selbri.start,
+			end: relativeClauses?.end ?? selbri.end,
+			selbri,
+			relativeClauses,
+		};
 	}
 
 	public tryParseTerm(): Term<Floating> | undefined {
@@ -457,10 +652,20 @@ export class Parser {
 		if (!token) {
 			return undefined;
 		}
-		if (token.selmaho === "KOhA" || token.selmaho === "LE") {
+		if (this.isAhead(["NA", "KU"])) {
+			return this.parseNaku();
+		}
+		if (this.isAhead(["PA"]) || this.isSumti6Ahead()) {
 			return this.parseSumti();
 		}
+
 		return undefined; // Not a term
+	}
+
+	public parseNaku(): Naku {
+		const na = this.nextToken()!;
+		const ku = this.tryParseCmavoWithFrees("KU")!;
+		return { type: "naku", start: na.index, end: ku.end, na: na.index, ku };
 	}
 
 	public tryParseCmavoWithFrees(selmaho: Selmaho): CmavoWithFrees | undefined {
@@ -479,6 +684,21 @@ export class Parser {
 		return undefined;
 	}
 
+	public parseBrivlaWithFrees(): BrivlaWithFrees {
+		const token = this.peekToken();
+		if (!token || token.selmaho !== "BRIVLA") {
+			throw new ParseError("expected brivla");
+		}
+		this.index++;
+		return {
+			type: "brivla-with-frees",
+			brivla: token.index,
+			start: token.index,
+			end: token.index,
+			frees: [],
+		};
+	}
+
 	public parseSentence(): Sentence {
 		const head: Term<Floating>[] = [];
 		const terbriState: TerbriState = { x: 1, filled: 0n };
@@ -489,9 +709,13 @@ export class Parser {
 				break;
 			}
 			head.push(term);
-			headPositions.push(terbriState.x);
-			terbriState.filled |= 1n << BigInt(terbriState.x);
-			terbriState.x++;
+			if (term.type === "sumti") {
+				headPositions.push(terbriState.x);
+				terbriState.filled |= 1n << BigInt(terbriState.x);
+				terbriState.x++;
+			} else {
+				headPositions.push(NaN);
+			}
 		}
 		const cu = head.length ? this.tryParseCmavoWithFrees("CU") : undefined;
 		if (terbriState.x === 1) {
@@ -506,13 +730,17 @@ export class Parser {
 						type: "terms",
 						start: head[0].start,
 						end: head[head.length - 1].end,
-						terms: head.map((term, i) => ({
-							...term,
-							role: {
-								xIndex: headPositions[i],
-								verbs: bridiTail.tertaus,
-							},
-						})),
+						terms: head.map((term, i) =>
+							term.type === "sumti"
+								? {
+										...term,
+										role: {
+											xIndex: headPositions[i],
+											verbs: bridiTail.tertaus,
+										},
+									}
+								: term,
+						),
 					}
 				: undefined;
 
@@ -576,14 +804,20 @@ export class Parser {
 
 		let state = terbriState;
 		const placedTerms: Term<Positional>[] = [];
+		const tailTertau = this.extractTertau(selbri, "tail");
+
 		for (const term of tailTerms.terms?.terms ?? []) {
-			placedTerms.push({
-				...term,
-				role: {
-					xIndex: state.x,
-					verbs: [{ start: selbri.end, end: selbri.end }],
-				},
-			});
+			placedTerms.push(
+				"role" in term
+					? {
+							...term,
+							role: {
+								xIndex: state.x,
+								verbs: [tailTertau],
+							},
+						}
+					: term,
+			);
 			const newFilled = state.filled | (1n << BigInt(state.x));
 			let newX = state.x;
 			while (newFilled & (1n << BigInt(newX))) {
@@ -595,7 +829,7 @@ export class Parser {
 		const placedTailTerms: TailTerms<Positional> = {
 			type: "tail-terms",
 			start: tailTerms.start,
-			end: tailTerms.end,
+			end: Math.max(tailTerms.end, selbri.end),
 			terms: {
 				type: "terms",
 				start: tailTerms.start,
@@ -609,9 +843,21 @@ export class Parser {
 			type: "bridi-tail-3",
 			start: selbri.start,
 			end: placedTailTerms.end,
-			tertau: { start: selbri.end, end: selbri.end }, // TODO not quite. "se broda"
+			tertau: this.extractTertau(selbri, "head"),
 			selbri,
 			tailTerms: placedTailTerms,
+		};
+	}
+
+	public extractTertau(selbri: Selbri, mode: "head" | "tail"): Span {
+		if (selbri.selbri1.type === "selbri-1-na") {
+			return this.extractTertau(selbri.selbri1.selbri, mode);
+		}
+		const tanru = selbri.selbri1.selbri2.selbri3.selbri4s;
+		const tertau = tanru[tanru.length - 1];
+		return {
+			start: tertau.start,
+			end: tertau.end,
 		};
 	}
 
@@ -654,19 +900,25 @@ export class Parser {
 
 export type ParseResult =
 	| { success: true; tokens: Token[]; text: Text }
-	| { success: false; error: ParseError };
+	| { success: false; error: ParseError }
+	| { success: false; tokens: Token[]; consumed: Text };
 
 export function parse(tokens: Token[]): ParseResult {
 	const parser = new Parser(tokens);
 	try {
 		const text = parser.parseText();
 		if (text) {
-			return { success: true, tokens, text };
+			if (parser.index === parser.tokens.length) {
+				return { success: true, tokens, text };
+			} else {
+				// Incomplete parse
+				return { success: false, tokens, consumed: text };
+			}
 		} else {
 			return { success: false, error: new ParseError("Failed to parse bridi") };
 		}
 	} catch (error) {
-		if (error instanceof ParseError) {
+		if (error instanceof ParseError || error instanceof Unsupported) {
 			return { success: false, error };
 		} else {
 			throw error; // Re-throw unexpected errors

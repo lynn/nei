@@ -2,7 +2,7 @@
 
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
-import type * as P from "./parse";
+import type * as G from "./grammar";
 import type { Token } from "./tokenize";
 
 export const TokenContext = createContext<Token[]>([]);
@@ -12,7 +12,10 @@ export function ShowTokens({ start, end }: { start: number; end: number }) {
 	return (
 		<span className="inline-flex flex-row gap-1 items-baseline mb-1">
 			{tokens.slice(start, end + 1).map((token, index) => (
-				<pre class="inline-block bg-black text-white rounded px-1 tracking-tighter" key={index}>
+				<pre
+					class="inline-block bg-black text-white rounded px-1 tracking-tighter"
+					key={index}
+				>
 					{token.sourceText}
 				</pre>
 			))}
@@ -20,11 +23,11 @@ export function ShowTokens({ start, end }: { start: number; end: number }) {
 	);
 }
 
-export function TextBox({ text }: { text: P.Text }) {
+export function TextBox({ text }: { text: G.Text }) {
 	return <Text1Box text1={text.text1} />;
 }
 
-export function Text1Box({ text1 }: { text1: P.Text1 }) {
+export function Text1Box({ text1 }: { text1: G.Text1 }) {
 	return (
 		<div className="box row">
 			<b>text</b>
@@ -40,7 +43,7 @@ export function Text1Box({ text1 }: { text1: P.Text1 }) {
 		</div>
 	);
 }
-export function ParagraphBox({ paragraph }: { paragraph: P.Paragraph }) {
+export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 	return (
 		<div className="box col">
 			<b>paragraph</b>
@@ -70,7 +73,7 @@ export function ParagraphBox({ paragraph }: { paragraph: P.Paragraph }) {
 	);
 }
 
-export function ItemBox({ item }: { item: P.Item }) {
+export function ItemBox({ item }: { item: G.Item }) {
 	return (
 		<div className="row">
 			{item.i && (
@@ -88,27 +91,27 @@ export function ItemBox({ item }: { item: P.Item }) {
 	);
 }
 
-export function FragmentBox({ fragment }: { fragment: P.Fragment }) {
+export function FragmentBox({ fragment }: { fragment: G.Fragment }) {
 	return <SumtiBox sumti={fragment} />;
 }
 
-export function StatementBox({ statement }: { statement: P.Statement }) {
+export function StatementBox({ statement }: { statement: G.Statement }) {
 	return <Statement1Box statement1={statement.statement1} />;
 }
 
-export function Statement1Box({ statement1 }: { statement1: P.Statement1 }) {
+export function Statement1Box({ statement1 }: { statement1: G.Statement1 }) {
 	return <Statement2Box statement2={statement1.first} />;
 }
 
-export function Statement2Box({ statement2 }: { statement2: P.Statement2 }) {
+export function Statement2Box({ statement2 }: { statement2: G.Statement2 }) {
 	return <Statement3Box statement3={statement2.first} />;
 }
 
-export function Statement3Box({ statement3 }: { statement3: P.Statement3 }) {
+export function Statement3Box({ statement3 }: { statement3: G.Statement3 }) {
 	return <SentenceBox sentence={statement3.sentence} />;
 }
 
-export function SentenceBox({ sentence }: { sentence: P.Sentence }) {
+export function SentenceBox({ sentence }: { sentence: G.Sentence }) {
 	return (
 		<div className="box row">
 			{sentence.terms && <TermsBox terms={sentence.terms} />}
@@ -123,7 +126,7 @@ export function SentenceBox({ sentence }: { sentence: P.Sentence }) {
 export function BridiTailBox({
 	bridiTail,
 }: {
-	bridiTail: P.BridiTail<P.Positional>;
+	bridiTail: G.BridiTail<G.Positional>;
 }) {
 	return <BridiTail1Box bridiTail1={bridiTail.first} />;
 }
@@ -131,7 +134,7 @@ export function BridiTailBox({
 export function BridiTail1Box({
 	bridiTail1,
 }: {
-	bridiTail1: P.BridiTail1<P.Positional>;
+	bridiTail1: G.BridiTail1<G.Positional>;
 }) {
 	return <BridiTail2Box bridiTail2={bridiTail1.first} />;
 }
@@ -139,7 +142,7 @@ export function BridiTail1Box({
 export function BridiTail2Box({
 	bridiTail2,
 }: {
-	bridiTail2: P.BridiTail2<P.Positional>;
+	bridiTail2: G.BridiTail2<G.Positional>;
 }) {
 	return <BridiTail3Box bridiTail3={bridiTail2.first} />;
 }
@@ -147,7 +150,7 @@ export function BridiTail2Box({
 export function BridiTail3Box({
 	bridiTail3,
 }: {
-	bridiTail3: P.BridiTail3<P.Positional>;
+	bridiTail3: G.BridiTail3<G.Positional>;
 }) {
 	return (
 		<div className="row">
@@ -157,7 +160,7 @@ export function BridiTail3Box({
 	);
 }
 
-export function SelbriBox({ selbri }: { selbri: P.Selbri }) {
+export function SelbriBox({ selbri }: { selbri: G.Selbri }) {
 	return (
 		<div className="box col bg-blue-100">
 			<b>selbri</b>
@@ -169,7 +172,7 @@ export function SelbriBox({ selbri }: { selbri: P.Selbri }) {
 export function TailTermsBox({
 	tailTerms,
 }: {
-	tailTerms: P.TailTerms<P.Positional>;
+	tailTerms: G.TailTerms<G.Positional>;
 }) {
 	return (
 		<div className="row">
@@ -181,7 +184,7 @@ export function TailTermsBox({
 	);
 }
 
-export function CmavoWithFreesBox({ cmavo }: { cmavo: P.CmavoWithFrees }) {
+export function CmavoWithFreesBox({ cmavo }: { cmavo: G.CmavoWithFrees }) {
 	return (
 		<div className="box col bg-green-100">
 			<b>cmavo</b>
@@ -200,7 +203,7 @@ export function CmavoWithFreesBox({ cmavo }: { cmavo: P.CmavoWithFrees }) {
 	);
 }
 
-export function TermsBox({ terms }: { terms: P.Terms<P.Positional> }) {
+export function TermsBox({ terms }: { terms: G.Terms<G.Positional> }) {
 	return (
 		<div className="row">
 			{terms.terms.map((term, index) => (
@@ -213,15 +216,21 @@ export function TermsBox({ terms }: { terms: P.Terms<P.Positional> }) {
 export function TermBox({
 	term,
 }: {
-	term: P.Term<P.Positional> | P.Term<P.Floating>;
+	term: G.Term<G.Positional> | G.Term<G.Floating>;
 }) {
-	return <SumtiBox sumti={term} />;
+	return term.type === "sumti" ? (
+		<SumtiBox sumti={term} />
+	) : term.type === "naku" ? (
+		<NakuBox term={term} />
+	) : (
+		"idk"
+	);
 }
 
 export function SumtiBox({
 	sumti,
 }: {
-	sumti: P.Sumti<P.Positional> | P.Sumti<P.Floating>;
+	sumti: G.Sumti<G.Positional> | G.Sumti<G.Floating>;
 }) {
 	const tokens = useContext(TokenContext);
 	return (
@@ -243,13 +252,18 @@ export function SumtiBox({
 			)}
 			<div className="row">
 				<ShowTokens start={sumti.start} end={sumti.end} />
-				<div className="terminator">
-					{sumti.terminator && (
-						<small>
-							<ShowTokens start={sumti.terminator} end={sumti.terminator} />
-						</small>
-					)}
-				</div>
+			</div>
+		</div>
+	);
+}
+
+export function NakuBox({ term }: { term: G.Naku }) {
+	const tokens = useContext(TokenContext);
+	return (
+		<div className="box col">
+			<b>clause neg.</b>
+			<div className="row">
+				<ShowTokens start={term.start} end={term.end} />
 			</div>
 		</div>
 	);

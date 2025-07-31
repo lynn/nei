@@ -114,9 +114,9 @@ export type Fragment = Sumti<Floating>; // TODO: others
 /// prenex = terms ZOhU #
 
 export interface Prenex extends Span {
-    type: "prenex";
-    terms: Terms<Floating>;
-    zohu: CmavoWithFrees;
+	type: "prenex";
+	terms: Terms<Floating>;
+	zohu: CmavoWithFrees;
 }
 
 /// sentence = [terms [CU #]] bridi-tail
@@ -194,7 +194,19 @@ export interface Terms<Role> extends Span {
 
 /// term = sumti | (tag | FA #) (sumti | /KU#/) | termset | NA KU #
 
-export type Term<Role> = Sumti<Role>; // TODO: others
+export type Term<Role> = Sumti<Role> | Tagged | Naku; // TODO: others
+
+export interface Tagged extends Span {
+	type: "tagged";
+	tagOrFa: Tag | CmavoWithFrees;
+	sumtiOrKu: Sumti<Floating> | CmavoWithFrees;
+}
+
+export interface Naku extends Span {
+	type: "naku";
+	na: TokenIndex;
+	ku: CmavoWithFrees;
+}
 
 /// termset = NUhI # gek terms /NUhU#/ gik terms /NUhU#/ | NUhI # terms /NUhU#/
 
@@ -351,17 +363,17 @@ export interface SumtiTail1 extends Span {
 /// relative-clause = GOI # term /GEhU#/ | NOI # subsentence /KUhO#/
 
 export interface RelativeClauses extends Span {
-    type: "relative-clauses";
-    first: RelativeClause;
-    // TODO: zi'e
+	type: "relative-clauses";
+	first: RelativeClause;
+	// TODO: zi'e
 }
 
 export interface RelativeClause extends Span {
-    type: "relative-clause";
-    noi: CmavoWithFrees;
-    subsentence: Subsentence;
-    kuho: CmavoWithFrees | undefined;
-    // TODO: goi
+	type: "relative-clause";
+	noi: CmavoWithFrees;
+	subsentence: Subsentence;
+	kuho: CmavoWithFrees | undefined;
+	// TODO: goi
 }
 
 /// selbri = [tag] selbri-1
@@ -403,12 +415,12 @@ export interface Selbri3 extends Span {
 	selbri4s: Selbri4[] & { 0: Selbri4 };
 }
 
-/// selbri-4 = selbri-5 [joik-jek selbri-5 | joik [stag] KE # selbri-3 /KEhE#/] ... 
+/// selbri-4 = selbri-5 [joik-jek selbri-5 | joik [stag] KE # selbri-3 /KEhE#/] ...
 
 export interface Selbri4 extends Span {
 	type: "selbri-4";
 	first: Selbri5;
-    // TODO: joik-jek
+	// TODO: joik-jek
 }
 
 /// selbri-5 =
@@ -453,7 +465,8 @@ export interface TanruUnit1 extends Span {
 ///     BRIVLA #
 ///     | GOhA [RAhO] #
 ///     | KE # selbri-3 /KEhE#/
-///     | ME # sumti /MEhU#/ [MOI #] | (number | lerfu-string) MOI #
+///     | ME # sumti /MEhU#/ [MOI #]
+//      | (number | lerfu-string) MOI #
 ///     | NUhA # mex-operator
 ///     | SE # tanru-unit-2
 ///     | JAI # [tag] tanru-unit-2
@@ -461,10 +474,75 @@ export interface TanruUnit1 extends Span {
 ///     | NAhE # tanru-unit-2
 ///     | NU [NAI] # [joik-jek NU [NAI] #] ... subsentence /KEI#/
 
-export interface TanruUnit2 extends Span {
-	type: "tanru-unit-2";
+export type TanruUnit2 =
+	| TuBrivla
+	| TuGoha
+	| TuKe
+	| TuMe
+	| TuMoi
+	| TuSe
+	| TuJai
+	| TuNahe
+	| TuNu;
+
+export interface TuBrivla extends Span {
+	type: "tu-brivla";
 	brivla: BrivlaWithFrees;
-	// TODO: everything else
+}
+
+export interface TuGoha extends Span {
+	type: "tu-goha";
+	goha: TokenIndex;
+	raho: TokenIndex | undefined;
+	frees: Free[];
+}
+
+export interface TuKe extends Span {
+	type: "tu-ke";
+	ke: CmavoWithFrees;
+	selbri3: Selbri3;
+	kehe: CmavoWithFrees | undefined;
+}
+
+export interface TuMe extends Span {
+	type: "tu-me";
+	me: CmavoWithFrees;
+	sumti: Sumti<Floating>;
+	mehu: CmavoWithFrees | undefined;
+	moi: CmavoWithFrees | undefined;
+}
+
+export interface TuMoi extends Span {
+	type: "tu-moi";
+	number: Namcu | LerfuString;
+	moi: CmavoWithFrees;
+}
+
+export interface TuSe extends Span {
+	type: "tu-se";
+	se: CmavoWithFrees;
+	inner: TanruUnit2;
+}
+
+export interface TuJai extends Span {
+	type: "tu-jai";
+	jai: CmavoWithFrees;
+	tag: Tag | undefined;
+	inner: TanruUnit2;
+}
+
+export interface TuNahe extends Span {
+	type: "tu-nahe";
+	nahe: CmavoWithFrees;
+	inner: TanruUnit2;
+}
+
+export interface TuNu extends Span {
+	type: "tu-nu";
+	nu: CmavoWithFrees;
+	// nu nai? nujeka? ridiculous imo
+	subsentence: Subsentence;
+	kei: CmavoWithFrees | undefined;
 }
 
 /// linkargs = BE # term [links] /BEhO#/
@@ -492,7 +570,7 @@ export interface Namcu extends Span {
 
 export interface Pa extends Span {
 	type: "pa";
-    // span is enough
+	// span is enough
 }
 
 /// lerfu-string = lerfu-word [PA | lerfu-word] ...

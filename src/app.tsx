@@ -11,7 +11,19 @@ interface IoProps {
 
 export function ShowParseResult({ output }: { output: ParseResult }) {
 	if (!output.success) {
-		return <div class="parse-error">Error: {output.error.message}</div>;
+		if ("error" in output) {
+			return <div class="parse-error">Error: {output.error.message}</div>;
+		} else {
+			return (
+				<div class="px-4 py-2 bg-red-500/20">
+					<div class="parse-result">
+						<TokenContext.Provider value={output.tokens}>
+							<TextBox text={output.consumed} />
+						</TokenContext.Provider>
+					</div>
+				</div>
+			);
+		}
 	}
 	return (
 		<div class="parse-result">
