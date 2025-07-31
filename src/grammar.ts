@@ -1,0 +1,690 @@
+export type TokenIndex = number;
+
+export interface Span {
+	start: TokenIndex;
+	end: TokenIndex;
+}
+
+export interface Brivla extends Span {
+	type: "brivla";
+}
+
+export type Floating = undefined;
+
+/** For example Sumti<Positional> has positional role info */
+export interface Positional {
+	xIndex: number;
+	verbs: Span[]; // shared
+}
+
+/// text =
+///   [NAI ...] [CMENE ... # | (indicators & free ...)] [joik-jek] text-1
+
+export interface Text extends Span {
+	type: "text";
+	// TODO: [NAI ...] [CMENE ... # | (indicators & free ...)] [joik-jek]
+	free: Free[];
+	text1: Text1;
+}
+
+/// text-1 =
+///   [(I [jek | joik] [[stag] BO] #) ... | NIhO ... #] [paragraphs]
+
+export interface Text1 extends Span {
+	type: "text-1";
+	// TODO: [(I [jek | joik] [[stag] BO] #) ... | NIhO ... #]
+	// for now just [I #]:
+	i?: CmavoWithFrees;
+	paragraphs: Paragraph[];
+}
+
+/// paragraphs = paragraph [NIhO ... # paragraphs]
+/// paragraph = (statement | fragment) [I # [statement | fragment]] ...
+
+export interface Paragraph extends Span {
+	type: "paragraph";
+	niho?: CmavoWithFrees;
+	first: Statement | Fragment;
+	rest: Item[];
+}
+
+export interface Item extends Span {
+	type: "item";
+	i: CmavoWithFrees | undefined;
+	tem: Statement | Fragment;
+}
+
+/// statement = statement-1 | prenex statement
+
+export interface Statement extends Span {
+	type: "statement";
+	prenexes: Prenex[];
+	statement1: Statement1;
+}
+
+/// statement-1 = statement-2 [I joik-jek [statement-2]] ...
+
+export interface Statement1 extends Span {
+	type: "statement-1";
+	first: Statement2;
+	rest: IjekStatement2[];
+}
+
+export interface Ijek extends Span {
+	type: "ijek";
+	i: TokenIndex;
+	jek: CmavoWithFrees;
+}
+
+export interface IjekStatement2 extends Span {
+	type: "ijek-statement-2";
+	ijek: Ijek;
+	statement2: Statement2;
+}
+
+/// statement-2 = statement-3 [I [jek | joik] [stag] BO # [statement-2]]
+
+export interface Statement2 extends Span {
+	type: "statement-2";
+	first: Statement3;
+	// TODO: [I [jek | joik] [stag] BO # [statement-2]]
+}
+
+/// statement-3 = sentence | [tag] TUhE # text-1 /TUhU#/
+
+export interface Statement3 extends Span {
+	type: "statement-3";
+	sentence: Sentence;
+	// TODO: [tag] TUhE # text-1 /TUhU#/
+}
+
+/// fragment =
+///   ek #
+///   | gihek #
+///   | quantifier
+///   | NA #
+///   | terms /VAU#/
+///   | prenex
+///   | relative-clauses
+///   | links
+///   | linkargs
+
+export type Fragment = Sumti<Floating>; // TODO: others
+
+/// prenex = terms ZOhU #
+
+export interface Prenex extends Span {
+    type: "prenex";
+    terms: Terms<Floating>;
+    zohu: CmavoWithFrees;
+}
+
+/// sentence = [terms [CU #]] bridi-tail
+
+export interface Sentence extends Span {
+	type: "sentence";
+	terms: Terms<Positional> | undefined;
+	cu: CmavoWithFrees | undefined;
+	bridiTail: BridiTail<Positional>;
+}
+
+/// subsentence = sentence | prenex subsentence
+
+export interface Subsentence extends Span {
+	type: "subsentence";
+	prenexes: Prenex[];
+	sentence: Sentence;
+}
+
+/// bridi-tail = bridi-tail-1 [gihek [stag] KE # bridi-tail /KEhE#/ tail-terms]
+
+export interface BridiTail<Role> extends Span {
+	type: "bridi-tail";
+	first: BridiTail1<Role>;
+	tertaus: Span[];
+	// TODO: [gihek [stag] KE # bridi-tail /KEhE#/ tail-terms]
+}
+
+/// bridi-tail-1 = bridi-tail-2 [gihek # bridi-tail-2 tail-terms] ...
+
+export interface BridiTail1<Role> extends Span {
+	type: "bridi-tail-1";
+	first: BridiTail2<Role>;
+	tertaus: Span[];
+	// TODO: [gihek # bridi-tail-2 tail-terms] ...
+}
+
+/// bridi-tail-2 = bridi-tail-3 [gihek [stag] BO # bridi-tail-2 tail-terms]
+
+export interface BridiTail2<Role> extends Span {
+	type: "bridi-tail-2";
+	first: BridiTail3<Role>;
+	tertaus: Span[];
+	// TODO: [gihek [stag] BO # bridi-tail-2 tail-terms]
+}
+
+/// bridi-tail-3 = selbri tail-terms | gek-sentence
+/// gek-sentence = gek subsentence gik subsentence tail-terms | [tag] KE # gek-sentence /KEhE#/ | NA # gek-sentence
+
+export interface BridiTail3<Role> extends Span {
+	type: "bridi-tail-3";
+	selbri: Selbri;
+	tertau: Span;
+	tailTerms: TailTerms<Role>;
+	// TODO: | gek-sentence
+}
+
+/// tail-terms = [terms] /VAU#/
+
+export interface TailTerms<Role> extends Span {
+	type: "tail-terms";
+	terms: Terms<Role> | undefined;
+	vau: CmavoWithFrees | undefined;
+}
+
+/// terms = terms-1 ...
+/// terms-1 = terms-2 [PEhE # joik-jek terms-2] ...
+/// terms-2 = term [CEhE # term] ...
+
+export interface Terms<Role> extends Span {
+	type: "terms";
+	terms: Term<Role>[];
+	// I don't care about termsets
+}
+
+/// term = sumti | (tag | FA #) (sumti | /KU#/) | termset | NA KU #
+
+export type Term<Role> = Sumti<Role>; // TODO: others
+
+/// termset = NUhI # gek terms /NUhU#/ gik terms /NUhU#/ | NUhI # terms /NUhU#/
+
+/// sumti = sumti-1 [VUhO # relative-clauses]
+
+export interface Sumti<Role> extends Span {
+	type: "sumti";
+	sumti1: Sumti1;
+	vuho: CmavoWithFrees | undefined;
+	relativeClauses: RelativeClauses | undefined;
+	role: Role;
+}
+
+/// sumti-1 = sumti-2 [(ek | joik) [stag] KE # sumti /KEhE#/]
+
+export interface Sumti1 extends Span {
+	type: "sumti-1";
+	sumti2: Sumti2;
+	// TODO: [(ek | joik) [stag] KE # sumti /KEhE#/]
+}
+
+/// sumti-2 = sumti-3 [joik-ek sumti-3] ...
+
+export interface Sumti2 extends Span {
+	type: "sumti-2";
+	sumti3: Sumti3;
+	// TODO: [joik-ek sumti-3]...
+}
+
+/// sumti-3 = sumti-4 [(ek | joik) [stag] BO # sumti-3]
+
+export interface Sumti3 extends Span {
+	type: "sumti-3";
+	sumti4: Sumti4;
+	// TODO: [(ek | joik) [stag] BO # sumti-3]
+}
+
+/// sumti-4 = sumti-5 | gek sumti gik sumti-4
+
+export interface Sumti4 extends Span {
+	type: "sumti-4";
+	sumti5: Sumti5;
+	// TODO: | gek sumti gik sumti-4
+}
+
+/// sumti-5 = [quantifier] sumti-6 [relative-clauses] | quantifier selbri /KU#/ [relative-clauses]
+
+export type Sumti5 = Sumti5Small | Sumti5Large;
+
+export interface Sumti5Large extends Span {
+	type: "sumti-5-large";
+	outerQuantifier: Quantifier | undefined;
+	sumti6: Sumti6;
+	relativeClauses: RelativeClauses | undefined;
+}
+
+export interface Sumti5Small extends Span {
+	type: "sumti-5-small";
+	quantifier: Quantifier;
+	selbri: Selbri;
+	ku: CmavoWithFrees | undefined;
+	relativeClauses: RelativeClauses | undefined;
+}
+
+/// sumti-6 =
+///   (LAhE # | NAhE BO #) [relative-clauses] sumti /LUhU#/
+///   | KOhA #
+///   | lerfu-string /BOI#/
+///   | LA # [relative-clauses] CMENE ... #
+///   | (LA | LE) # sumti-tail /KU#/
+///   | LI # mex /LOhO#/
+///   | ZO any-word #
+///   | LU text /LIhU#/
+///   | LOhU any-word ... LEhU #
+///   | ZOI any-word anything any-word #
+
+export type Sumti6 =
+	| Sumti6Lahe
+	| Sumti6Nahebo
+	| Sumti6Koha
+	| Sumti6Lerfu
+	| Sumti6Le
+	| Sumti6Li; // TODO: quotes
+
+export interface Sumti6Lahe extends Span {
+	type: "sumti-6-lahe";
+	lahe: CmavoWithFrees;
+	// relative clauses here feels like crimes. not condoning it
+	sumti: Sumti<Floating>;
+	luhu: CmavoWithFrees | undefined;
+}
+
+export interface Sumti6Nahebo extends Span {
+	type: "sumti-6-nahebo";
+	nahe: CmavoWithFrees;
+	bo: CmavoWithFrees;
+	// relative clauses here feels like crimes. not condoning it
+	sumti: Sumti<Floating>;
+	luhu: CmavoWithFrees | undefined;
+}
+
+export interface Sumti6Koha extends Span {
+	type: "sumti-6-koha";
+	koha: CmavoWithFrees;
+}
+
+export interface Sumti6Lerfu extends Span {
+	type: "sumti-6-lerfu";
+	lerfuString: LerfuString;
+	boi: CmavoWithFrees | undefined;
+}
+
+export interface Sumti6La extends Span {
+	type: "sumti-6-la";
+	la: CmavoWithFrees;
+	relativeClauses: RelativeClauses | undefined;
+	cmevlas: TokenIndex[];
+	frees: Free[];
+}
+
+export interface Sumti6Le extends Span {
+	type: "sumti-6-le";
+	le: CmavoWithFrees;
+	sumtiTail: SumtiTail;
+	ku: CmavoWithFrees | undefined;
+}
+
+export interface Sumti6Li extends Span {
+	type: "sumti-6-li";
+	li: CmavoWithFrees;
+	lerfuString: LerfuString; // not doing mekso...
+	loho: CmavoWithFrees | undefined;
+}
+
+/// sumti-tail = [sumti-6 [relative-clauses]] sumti-tail-1 | relative-clauses sumti-tail-1
+
+export interface SumtiTail extends Span {
+	type: "sumti-tail";
+	owner: Sumti6 | undefined;
+	relativeClauses: RelativeClauses | undefined;
+	tail: SumtiTail1;
+}
+
+/// sumti-tail-1 = [quantifier] selbri [relative-clauses] | quantifier sumti
+
+export interface SumtiTail1 extends Span {
+	type: "sumti-tail-1";
+	// TODO: quantifiers and stuff
+	selbri: Selbri;
+	relativeClauses: RelativeClauses | undefined;
+}
+
+/// relative-clauses = relative-clause [ZIhE # relative-clause] ...
+/// relative-clause = GOI # term /GEhU#/ | NOI # subsentence /KUhO#/
+
+export interface RelativeClauses extends Span {
+    type: "relative-clauses";
+    first: RelativeClause;
+    // TODO: zi'e
+}
+
+export interface RelativeClause extends Span {
+    type: "relative-clause";
+    noi: CmavoWithFrees;
+    subsentence: Subsentence;
+    kuho: CmavoWithFrees | undefined;
+    // TODO: goi
+}
+
+/// selbri = [tag] selbri-1
+
+export interface Selbri extends Span {
+	type: "selbri";
+	tag: Tag | undefined;
+	selbri1: Selbri1;
+}
+
+/// selbri-1 = selbri-2 | NA # selbri
+
+export type Selbri1 = Selbri1Na | Selbri1Simple;
+
+export interface Selbri1Na extends Span {
+	type: "selbri-1-na";
+	na: CmavoWithFrees;
+	selbri: Selbri;
+}
+
+export interface Selbri1Simple extends Span {
+	type: "selbri-1-simple";
+	selbri2: Selbri2;
+}
+
+/// selbri-2 = selbri-3 [CO # selbri-2]
+
+export interface Selbri2 extends Span {
+	type: "selbri-2";
+	selbri3: Selbri3;
+	co?: CmavoWithFrees;
+	coSelbri?: Selbri2;
+}
+
+/// selbri-3 = selbri-4 ...
+
+export interface Selbri3 extends Span {
+	type: "selbri-3";
+	selbri4s: Selbri4[] & { 0: Selbri4 };
+}
+
+/// selbri-4 = selbri-5 [joik-jek selbri-5 | joik [stag] KE # selbri-3 /KEhE#/] ... 
+
+export interface Selbri4 extends Span {
+	type: "selbri-4";
+	first: Selbri5;
+    // TODO: joik-jek
+}
+
+/// selbri-5 =
+///     selbri-6 [(jek | joik) [stag] BO # selbri-5]
+
+export interface Selbri5 extends Span {
+	type: "selbri-5";
+	first: Selbri6;
+	// TODO: [(jek | joik) [stag] BO # selbri-5]
+}
+
+/// selbri-6 =
+///     tanru-unit [BO # selbri-6]
+///     | [NAhE #] guhek selbri gik selbri-6
+
+export interface Selbri6 extends Span {
+	type: "selbri-6";
+	tanruUnit: TanruUnit;
+	// TODO: [BO # selbri-6]
+	// TODO: |  [NAhE #] guhek selbri gik selbri-6
+}
+
+/// tanru-unit =
+///     tanru-unit-1 [CEI # tanru-unit-1] ...
+
+export interface TanruUnit extends Span {
+	type: "tanru-unit";
+	tanruUnit1: TanruUnit1;
+	// TODO: cei
+}
+
+/// tanru-unit-1 =
+///     tanru-unit-2 [linkargs]
+
+export interface TanruUnit1 extends Span {
+	type: "tanru-unit-1";
+	tanruUnit2: TanruUnit2;
+	// TODO: linkargs
+}
+
+/// tanru-unit-2 =
+///     BRIVLA #
+///     | GOhA [RAhO] #
+///     | KE # selbri-3 /KEhE#/
+///     | ME # sumti /MEhU#/ [MOI #] | (number | lerfu-string) MOI #
+///     | NUhA # mex-operator
+///     | SE # tanru-unit-2
+///     | JAI # [tag] tanru-unit-2
+///     | any-word (ZEI any-word) ...
+///     | NAhE # tanru-unit-2
+///     | NU [NAI] # [joik-jek NU [NAI] #] ... subsentence /KEI#/
+
+export interface TanruUnit2 extends Span {
+	type: "tanru-unit-2";
+	brivla: BrivlaWithFrees;
+	// TODO: everything else
+}
+
+/// linkargs = BE # term [links] /BEhO#/
+/// links = BEI # term [links]
+
+// TODO
+
+/// quantifier = number /BOI#/ | VEI # mex /VEhO#/
+
+export interface Quantifier extends Span {
+	type: "quantifier";
+	number: Namcu;
+	boi: CmavoWithFrees | undefined;
+}
+
+/// mex = (snip)
+
+/// number = PA [PA | lerfu-word] ...
+
+export interface Namcu extends Span {
+	type: "number";
+	first: Pa;
+	rest: (Pa | LerfuWord)[];
+}
+
+export interface Pa extends Span {
+	type: "pa";
+    // span is enough
+}
+
+/// lerfu-string = lerfu-word [PA | lerfu-word] ...
+
+export interface LerfuString extends Span {
+	type: "lerfu-string";
+	first: LerfuWord;
+	rest: (Pa | LerfuWord)[];
+}
+
+/// lerfu-word = BY | any-word BU | LAU lerfu-word | TEI lerfu-string FOI
+
+export interface LerfuWord extends Span {
+	type: "lerfu-word";
+	by: TokenIndex;
+	// TODO: bu, lau, tei, foi
+}
+
+/// ek = [NA] [SE] A [NAI]
+
+export interface Ek extends Span {
+	type: "ek";
+	na: TokenIndex | undefined;
+	se: TokenIndex | undefined;
+	a: TokenIndex;
+	nai: TokenIndex | undefined;
+}
+
+/// gihek = [NA] [SE] GIhA [NAI]
+
+export interface Gihek extends Span {
+	type: "gihek";
+	na: TokenIndex | undefined;
+	se: TokenIndex | undefined;
+	giha: TokenIndex;
+	nai: TokenIndex | undefined;
+}
+
+/// jek = [NA] [SE] JA [NAI]
+
+export interface Jek extends Span {
+	type: "jek";
+	na: TokenIndex | undefined;
+	se: TokenIndex | undefined;
+	ja: TokenIndex;
+	nai: TokenIndex | undefined;
+}
+
+/// joik = [SE] JOI [NAI] | interval | GAhO interval GAhO
+
+export interface Joik extends Span {
+	type: "joik";
+	na: TokenIndex | undefined;
+	se: TokenIndex | undefined;
+	joi: TokenIndex;
+	nai: TokenIndex | undefined;
+}
+
+/// interval = [SE] BIhI [NAI]
+
+/// joik-ek = joik # | ek #
+
+export interface JoikEk extends Span {
+	type: "joik-ek";
+	jk: Joik | Ek;
+	frees: Free[];
+}
+
+/// joik-jek = joik # | jek #
+
+export interface JoikJek extends Span {
+	type: "joik-jek";
+	jk: Joik | Jek;
+	frees: Free[];
+}
+
+/// gek = [SE] GA [NAI] # | joik GI # | stag gik
+
+export interface Gek extends Span {
+	type: "gek";
+	se: TokenIndex | undefined;
+	ga: TokenIndex;
+	nai: TokenIndex | undefined;
+	frees: Free[];
+	// TODO: joi gi, bai gi
+}
+
+/// guhek = [SE] GUhA [NAI] #
+
+export interface Guhek extends Span {
+	type: "guhek";
+	se: TokenIndex | undefined;
+	guha: TokenIndex;
+	nai: TokenIndex | undefined;
+	frees: Free[];
+}
+
+/// gik = GI [NAI] #
+
+export interface Gik extends Span {
+	type: "gik";
+	gi: TokenIndex;
+	nai: TokenIndex | undefined;
+	frees: Free[];
+}
+
+/// tag = tense-modal [joik-jek tense-modal] ...
+
+export interface Tag extends Span {
+	type: "tag";
+	first: TenseModal;
+	// TODO: [joik-jek tense-modal] ...
+}
+
+/// stag = simple-tense-modal [(jek | joik) simple-tense-modal] ...
+
+export interface Stag extends Span {
+	type: "stag";
+	first: SimpleTenseModal;
+	// TODO: joik/jek
+}
+
+/// tense-modal = simple-tense-modal # | FIhO # selbri /FEhU#/
+
+export interface TenseModal extends Span {
+	type: "tense-modal";
+	first: SimpleTenseModal;
+	frees: Free[];
+	// TODO: | FIhO # selbri /FEhU#/
+}
+
+/// simple-tense-modal =
+///     [NAhE] [SE] BAI [NAI] [KI]
+///     | [NAhE] (time [space] | space [time]) & CAhA [KI]
+///     | KI
+///     | CUhE
+
+export interface SimpleTenseModal extends Span {
+	nahe: TokenIndex | undefined;
+	se: TokenIndex | undefined;
+	bai: TokenIndex;
+	nai: TokenIndex | undefined;
+	ki: TokenIndex | undefined;
+	// TODO: others
+}
+
+/// time = ZI & time-offset ... & ZEhA [PU [NAI]] & interval-property ...
+/// time-offset = PU [NAI] [ZI]
+/// space = VA & space-offset ... & space-interval & (MOhI space-offset)
+/// space-offset = FAhA [NAI] [VA]
+/// space-interval = ((VEhA & VIhA) [FAhA [NAI]]) & space-int-props
+/// space-int-props = (FEhE interval-property) ...
+/// interval-property = number ROI [NAI] | TAhE [NAI] | ZAhO [NAI]
+
+// TODO
+
+/// free =
+///     SEI # [terms [CU #]] selbri /SEhU/
+///     | SOI # sumti [sumti] /SEhU/
+///     | vocative [relative-clauses] selbri [relative-clauses] /DOhU/
+///     | vocative [relative-clauses] CMENE ... # [relative-clauses] /DOhU/
+///     | vocative [sumti] /DOhU/
+///     | (number | lerfu-string) MAI
+///     | TO text /TOI/
+///     | XI # (number | lerfu-string) /BOI/
+///     | XI # VEI # mex /VEhO/
+
+/// vocative =
+///     (COI [NAI]) ... & DOI
+
+/// indicators =
+///     [FUhE] indicator ...
+
+/// indicator =
+///     (UI | CAI) [NAI]
+///     | Y
+///     | DAhO
+///     | FUhO
+
+export interface Free extends Span {
+	type: "free";
+	// TODO: frees
+}
+
+export interface CmavoWithFrees extends Span {
+	type: "cmavo-with-frees";
+	cmavo: TokenIndex;
+	frees: Free[];
+}
+
+export interface BrivlaWithFrees extends Span {
+	type: "brivla-with-frees";
+	brivla: TokenIndex;
+	frees: Free[];
+}
