@@ -16,6 +16,7 @@ import type {
 	Item,
 	LerfuString,
 	LerfuWord,
+	Motion,
 	Naku,
 	Namcu,
 	Nihos,
@@ -35,6 +36,9 @@ import type {
 	Sentence,
 	SimpleTenseModal,
 	Space,
+	SpaceInterval,
+	SpaceIntProp,
+	SpaceOffset,
 	Spacetime,
 	Span,
 	Statement,
@@ -68,6 +72,7 @@ import type {
 	TimeOffset,
 	Timespace,
 	TokenIndex,
+	Vxha,
 	Zehapu,
 } from "./grammar";
 import type { Selmaho, Token } from "./tokenize";
@@ -642,13 +647,13 @@ export class Parser {
 
 	public parseNamcu(): Namcu {
 		const first = this.parsePa();
-		const end = first.end;
+		let end = first.end;
 		const rest: (Pa | LerfuWord)[] = [];
 		while (true) {
-			const next = undefined; // TODO this.tryParsePaLerfuWord();
+			const next = this.tryParsePa() ?? this.tryParseLerfuWord();
 			if (!next) break;
-			// end = next.end;
-			// rest.push(next);
+			end = next.end;
+			rest.push(next);
 		}
 		return { type: "number", start: first.start, end, first, rest };
 	}
@@ -960,6 +965,7 @@ export class Parser {
 		const ki = this.tryParseCmavo("KI");
 
 		if (!tense && !caha) {
+			console.log({ nahe, tense, caha, ki });
 			// We should never hit this because we predict it
 			throw new ParseError("Bad stm-tense", this.index);
 		}
@@ -1002,6 +1008,7 @@ export class Parser {
 	}
 
 	public tryParseTime(): Time | undefined {
+		const backtrack = this.index;
 		let start: number | undefined;
 		let end: number | undefined;
 
@@ -1046,6 +1053,7 @@ export class Parser {
 				intervalProperties,
 			};
 		} else {
+			this.index = backtrack;
 			return undefined;
 		}
 	}
@@ -1113,7 +1121,140 @@ export class Parser {
 	}
 
 	public tryParseSpace(): Space | undefined {
-		return undefined; // TODO
+		const backtrack = this.index;
+		let start: number | undefined;
+		let end: number | undefined;
+
+		const va = this.tryParseCmavoWithFrees("VA");
+		if (va !== undefined) {
+			start ??= va.start;
+			end = va.end;
+		}
+
+		const spaceOffsets: SpaceOffset[] = [];
+		while (true) {
+			const offset = this.tryParseSpaceOffset();
+			if (!offset) break;
+			spaceOffsets.push(offset);
+			start ??= offset.start;
+			end = offset.end;
+		}
+		const spaceIntervals: SpaceInterval[] = [];
+		while (true) {
+			const interval = this.tryParseSpaceInterval();
+			if (!interval) break;
+			spaceIntervals.push(interval);
+			start ??= interval.start;
+			end = interval.end;
+		}
+
+		const motion = this.tryParseMotion();
+		if (motion !== undefined) {
+			start ??= motion.start;
+			end = motion.end;
+		}
+
+		if (start !== undefined && end !== undefined) {
+			return {
+				type: "space",
+				start,
+				end,
+				va,
+				spaceOffsets,
+				spaceIntervals,
+				motion,
+			};
+		} else {
+			this.index = backtrack;
+			return undefined;
+		}
+	}
+
+	public tryParseMotion(): Motion | undefined {
+		const mohi = this.tryParseCmavo("MOhI");
+		if (mohi === undefined) return undefined;
+		const spaceOffset = this.tryParseSpaceOffset();
+		if (spaceOffset === undefined) {
+			throw new ParseError("bad motion");
+		}
+		return {
+			type: "motion",
+			start: mohi,
+			end: spaceOffset?.end ?? mohi,
+			mohi,
+			spaceOffset,
+		};
+	}
+
+	public tryParseSpaceOffset(): SpaceOffset | undefined {
+		const faha = this.tryParseCmavo("FAhA");
+		if (faha === undefined) return undefined;
+		const nai = this.tryParseCmavo("NAI");
+		const va = this.tryParseCmavo("VA");
+		return {
+			type: "space-offset",
+			start: faha,
+			end: va ?? nai ?? faha,
+			faha,
+			nai,
+			va,
+		};
+	}
+
+	public tryParseSpaceInterval(): SpaceInterval | undefined {
+		const vxha = this.tryParseVxha();
+		const spaceIntProps: SpaceIntProp[] = [];
+		while (true) {
+			const next = this.tryParseSpaceIntProp();
+			if (!next) break;
+
+			spaceIntProps.push(next);
+		}
+		if (vxha !== undefined && spaceIntProps.length) {
+			return {
+				type: "space-interval",
+				start: vxha.start,
+				end: spaceIntProps.length
+					? spaceIntProps[spaceIntProps.length - 1].end
+					: vxha.end,
+				vxha,
+				spaceIntProps,
+			};
+		}
+	}
+
+	public tryParseVxha(): Vxha | undefined {
+		const veha = this.tryParseCmavo("VEhA");
+		const viha = this.tryParseCmavo("VIhA");
+		const first = veha ?? viha;
+		if (first === undefined) return undefined;
+		const faha = this.tryParseCmavo("FAhA");
+		const nai = faha ? this.tryParseCmavo("NAI") : undefined;
+		return {
+			type: "vxha",
+			start: first,
+			end: nai ?? faha ?? viha ?? first,
+			veha,
+			viha,
+			faha,
+			nai,
+		};
+	}
+
+	public tryParseSpaceIntProp(): SpaceIntProp | undefined {
+		const fehe = this.tryParseCmavo("FEhE");
+		if (fehe === undefined) return undefined;
+		const intervalProperty = this.tryParseIntervalProperty();
+		if (intervalProperty === undefined) {
+			throw new ParseError("bad space-int-prop");
+		}
+		return {
+			type: "space-int-prop",
+			start: fehe,
+			end: intervalProperty.end,
+			fehe,
+			intervalProperty,
+		};
 	}
 
 	public parseTagged(): Tagged {

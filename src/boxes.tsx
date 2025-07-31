@@ -13,17 +13,22 @@ export function ShowTokens({ start, end }: { start: number; end: number }) {
 	return (
 		<span className="inline-flex flex-row gap-2 items-baseline mb-1">
 			{tokens.slice(start, end + 1).map((token, index) => (
-				<pre
-					class="inline-block font-extrabold tracking-tight"
-					style={{
-						color: new Parser([]).isTenseSelmaho(token.selmaho)
-							? "#c00080"
-							: "black",
-					}}
-					key={index}
-				>
-					{token.sourceText}
-				</pre>
+				<div className="inline-flex flex-col">
+					<pre
+						class="inline-block tracking-tighter"
+						style={{
+							color:
+								token.lexeme === "bisladru"
+									? "#e03000"
+									: new Parser([]).isTenseSelmaho(token.selmaho)
+										? "#c00080"
+										: "black",
+						}}
+						key={index}
+					>
+						{token.sourceText}
+					</pre>
+				</div>
 			))}
 		</span>
 	);
@@ -296,7 +301,6 @@ export function SumtiBox({
 }: {
 	sumti: G.Sumti<G.Positional> | G.Sumti<G.Floating>;
 }) {
-	const tokens = useContext(TokenContext);
 	return (
 		<div className="box col bg-amber-100">
 			{sumti.role ? <ExplainRole role={sumti.role} /> : <b>noun</b>}

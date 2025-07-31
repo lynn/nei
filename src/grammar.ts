@@ -806,7 +806,7 @@ export interface SpaceOffset extends Span {
 export interface SpaceInterval extends Span {
 	type: "space-interval";
 	vxha: Vxha | undefined;
-	spaceIntProp: SpaceIntProp[];
+	spaceIntProps: SpaceIntProp[];
 }
 
 export interface Vxha extends Span {
