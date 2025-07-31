@@ -13,6 +13,7 @@
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
+pre { font-family: "Fira Code", monospace; }
 
 html,
 body,
@@ -29,11 +30,11 @@ body,
 }
 
 .box {
-	@apply outline px-2 pt-2 border-collapse rounded-t w-fit;
+	@apply outline px-2 pt-2 rounded-t w-fit;
 }
 
 .box.bridi-tail {
-	@apply outline px-2 pt-2 border-collapse rounded-none w-fit;
+	@apply outline px-2 pt-2 rounded-none w-fit;
 }
 
 .box > b {

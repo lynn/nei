@@ -14,9 +14,11 @@ import type {
 	IjekStatement2,
 	IntervalProperty,
 	Item,
+	LerfuString,
 	LerfuWord,
 	Naku,
 	Namcu,
+	Nihos,
 	Pa,
 	Paragraph,
 	Positional,
@@ -127,19 +129,46 @@ export class Parser {
 	}
 
 	public parseText1(): Text1 {
-		const i = this.tryParseCmavoWithFrees("I");
+		const i = this.tryParseCmavoWithFrees("I") ?? this.tryParseNihos();
 		const first = this.parseParagraph();
-		// TODO: ni'o
+		const paragraphs = [first];
+		let end = first.end;
+		while (this.peekToken()?.selmaho === "NIhO") {
+			console.log("Parsing another paragraph from", this.index);
+			const p = this.parseParagraph();
+			end = p.end;
+			paragraphs.push(p);
+		}
 		return {
 			type: "text-1",
 			start: i?.start ?? first.start,
-			end: first.end,
-			i,
-			paragraphs: [first],
+			end,
+			firstSeparator: i,
+			paragraphs,
+		};
+	}
+
+	public tryParseNihos(): Nihos | undefined {
+		const first = this.tryParseCmavo("NIhO");
+		if (first === undefined) return undefined;
+		const nihos = [first];
+		while (true) {
+			const next = this.tryParseCmavo("NIhO");
+			if (next === undefined) break;
+			nihos.push(next);
+		}
+		const frees = this.parseFrees();
+		return {
+			type: "nihos",
+			start: first,
+			end: frees.length ? frees[frees.length - 1].end : nihos[nihos.length - 1],
+			nihos,
+			frees,
 		};
 	}
 
 	public parseParagraph(): Paragraph {
+		const niho = this.tryParseNihos();
 		const first = this.parseTem();
 		const items: Item[] = [];
 		while (this.peekToken()?.selmaho === "I") {
@@ -149,9 +178,9 @@ export class Parser {
 
 		return {
 			type: "paragraph",
-			start: first.start,
+			start: niho?.start ?? first.start,
 			end: items.length > 0 ? items[items.length - 1].end : first.end,
-			niho: this.tryParseCmavoWithFrees("NIhO"),
+			niho,
 			first,
 			rest: items,
 		};
@@ -258,7 +287,6 @@ export class Parser {
 		const selmaho = this.peekToken()?.selmaho;
 		const tag =
 			selmaho && this.isTenseSelmaho(selmaho) ? this.parseTag() : undefined;
-		console.log("PARSED TAG", tag);
 		const selbri1 = this.parseSelbri1();
 		return {
 			type: "selbri",
@@ -383,6 +411,15 @@ export class Parser {
 		};
 	}
 
+	public isNumberMoiAhead(): boolean {
+		const backtrack = this.index;
+		const number = this.tryParseNamcu() ?? this.tryParseLerfuString();
+		const success =
+			number !== undefined && this.tryParseCmavo("MOI") !== undefined;
+		this.index = backtrack;
+		return success;
+	}
+
 	public parseTanruUnit2(): TanruUnit2 {
 		const token = this.peekToken();
 		if (!token) throw new ParseError("expected tanru-unit, got eof");
@@ -397,17 +434,59 @@ export class Parser {
 			};
 		}
 
-		if (token?.selmaho === "NU") {
-			const nu = this.tryParseCmavoWithFrees("NU")!;
-			const subsentence = this.parseSubsentence();
-			const kei = this.tryParseCmavoWithFrees("KEI");
+		if (token?.selmaho === "GOhA") {
+			const goha = this.nextToken()!;
+			const raho = this.tryParseCmavo("RAhO");
+			const frees = this.parseFrees();
 			return {
-				type: "tu-nu",
-				start: nu.start,
-				end: kei?.end ?? subsentence.end,
-				nu,
-				subsentence,
-				kei,
+				type: "tu-goha",
+				start: goha.index,
+				end: frees.length ? frees[frees.length - 1].end : (raho ?? goha.index),
+				goha: goha.index,
+				raho,
+				frees,
+			};
+		}
+
+		if (token?.selmaho === "KE") {
+			const ke = this.tryParseCmavoWithFrees("KE")!;
+			const selbri3 = this.parseSelbri3();
+			const kehe = this.tryParseCmavoWithFrees("KEhE");
+			return {
+				type: "tu-ke",
+				start: ke.start,
+				end: kehe?.end ?? selbri3.end,
+				ke,
+				selbri3,
+				kehe,
+			};
+		}
+
+		if (token?.selmaho === "ME") {
+			const me = this.tryParseCmavoWithFrees("ME")!;
+			const sumti = this.parseSumti();
+			const mehu = this.tryParseCmavoWithFrees("MEhU");
+			const moi = this.tryParseCmavoWithFrees("MOI");
+			return {
+				type: "tu-me",
+				start: me.start,
+				end: moi?.end ?? mehu?.end ?? sumti?.end,
+				me,
+				sumti,
+				mehu,
+				moi,
+			};
+		}
+
+		if (this.isNumberMoiAhead()) {
+			const namcu = this.tryParseNamcu() ?? this.tryParseLerfuString()!;
+			const moi = this.tryParseCmavoWithFrees("MOI")!;
+			return {
+				type: "tu-moi",
+				start: namcu.start,
+				end: moi.end,
+				number: namcu,
+				moi,
 			};
 		}
 
@@ -420,6 +499,46 @@ export class Parser {
 				end: inner.end,
 				se,
 				inner,
+			};
+		}
+
+		if (token?.selmaho === "JAI") {
+			const jai = this.tryParseCmavoWithFrees("JAI")!;
+			const tag = this.isTaggedVerbAhead() ? this.parseTag() : undefined;
+			const inner = this.parseTanruUnit2();
+			return {
+				type: "tu-jai",
+				start: jai.start,
+				end: inner.end,
+				jai,
+				tag,
+				inner,
+			};
+		}
+
+		if (token?.selmaho === "NAhE") {
+			const nahe = this.tryParseCmavoWithFrees("NAhE")!;
+			const inner = this.parseTanruUnit2();
+			return {
+				type: "tu-nahe",
+				start: nahe.start,
+				end: inner.end,
+				nahe,
+				inner,
+			};
+		}
+
+		if (token?.selmaho === "NU") {
+			const nu = this.tryParseCmavoWithFrees("NU")!;
+			const subsentence = this.parseSubsentence();
+			const kei = this.tryParseCmavoWithFrees("KEI");
+			return {
+				type: "tu-nu",
+				start: nu.start,
+				end: kei?.end ?? subsentence.end,
+				nu,
+				subsentence,
+				kei,
 			};
 		}
 
@@ -542,12 +661,45 @@ export class Parser {
 		}
 	}
 
+	public tryParseLerfuWord(): LerfuWord | undefined {
+		const by = this.tryParseCmavo("BY");
+		if (by === undefined) return undefined;
+		return { type: "lerfu-word", start: by, end: by, by };
+	}
+
+	public tryParseLerfuString(): LerfuString | undefined {
+		const first = this.tryParseLerfuWord();
+		if (!first) {
+			return undefined;
+		}
+		const rest: (Pa | LerfuWord)[] = [];
+		while (true) {
+			const next = this.tryParseLerfuWord() ?? this.tryParsePa();
+			if (!next) break;
+		}
+		return {
+			type: "lerfu-string",
+			start: first.start,
+			end: rest.length ? rest[rest.length - 1].end : first.end,
+			first,
+			rest,
+		};
+	}
+
 	public parsePa(): Pa {
 		const token = this.nextToken();
 		if (!token || token.selmaho !== "PA") {
 			throw new ParseError("Expected digit");
 		}
 		return { type: "pa", start: token.index, end: token.index };
+	}
+
+	public tryParsePa(): Pa | undefined {
+		const token = this.tryParseCmavo("PA");
+		if (token) {
+			return { type: "pa", start: token, end: token };
+		}
+		return undefined;
 	}
 
 	public tryParseRelativeClauses(): RelativeClauses | undefined {
@@ -584,6 +736,20 @@ export class Parser {
 		if (token.selmaho === "KOhA") {
 			const koha = this.tryParseCmavoWithFrees("KOhA")!;
 			return { type: "sumti-6-koha", start: koha.start, end: koha.end, koha };
+		}
+
+		if (token.selmaho === "LAhE") {
+			const lahe = this.tryParseCmavoWithFrees("LAhE")!;
+			const sumti = this.parseSumti();
+			const luhu = this.tryParseCmavoWithFrees("LUhU");
+			return {
+				type: "sumti-6-lahe",
+				start: lahe.start,
+				end: luhu?.end ?? sumti.end,
+				lahe,
+				sumti,
+				luhu,
+			};
 		}
 
 		if (token.selmaho === "LE") {
@@ -651,10 +817,16 @@ export class Parser {
 	}
 
 	private isSumtiAhead(): boolean {
-		return this.isAhead(["PA"]) || this.isSumti6Ahead();
+		if (this.isSumti6Ahead()) {
+			return true;
+		}
+		if (this.isNumberMoiAhead()) {
+			return false;
+		}
+		return this.isAhead(["PA"]);
 	}
 
-	private isTenseSelmaho(selmaho: Selmaho): boolean {
+	public isTenseSelmaho(selmaho: Selmaho): boolean {
 		return [
 			"FA", // dubious but CLL says so
 			"BAI",
@@ -677,8 +849,7 @@ export class Parser {
 		].includes(selmaho);
 	}
 
-	private isTaggedAhead(): boolean {
-		console.log(this.index);
+	private isTaggedSumtiAhead(): boolean {
 		// kinda ugly
 		const oldIndex = this.index;
 		while (true) {
@@ -693,6 +864,24 @@ export class Parser {
 		if (this.index === oldIndex) return false; // no tag
 
 		const ok = !this.isVerbAhead();
+		this.index = oldIndex;
+		return ok;
+	}
+
+	private isTaggedVerbAhead(): boolean {
+		// kinda ugly
+		const oldIndex = this.index;
+		while (true) {
+			const selmaho = this.tokens[this.index]?.selmaho;
+			if (this.isTenseSelmaho(selmaho)) {
+				this.index++;
+				continue;
+			}
+			break;
+		}
+		if (this.index === oldIndex) return false; // no tag
+
+		const ok = this.isVerbAhead();
 		this.index = oldIndex;
 		return ok;
 	}
@@ -863,7 +1052,7 @@ export class Parser {
 
 	public tryParseTimeOffset(): TimeOffset | undefined {
 		const pu = this.tryParseCmavo("PU");
-		if (!pu) return undefined;
+		if (pu === undefined) return undefined;
 		const nai = this.tryParseCmavo("NAI");
 		const zi = this.tryParseCmavo("ZI");
 		return {
@@ -910,7 +1099,7 @@ export class Parser {
 
 	public tryParseZehapu(): Zehapu | undefined {
 		const zeha = this.tryParseCmavo("ZEhA");
-		if (!zeha) return undefined;
+		if (zeha === undefined) return undefined;
 		const pu = this.tryParseCmavo("PU");
 		const nai = pu ? this.tryParseCmavo("NAI") : undefined;
 		return {
@@ -950,10 +1139,10 @@ export class Parser {
 		if (this.isAhead(["NA", "KU"])) {
 			return this.parseNaku();
 		}
-		if (this.isAhead(["PA"]) || this.isSumti6Ahead()) {
+		if (this.isSumtiAhead()) {
 			return this.parseSumti();
 		}
-		if (this.isTaggedAhead()) {
+		if (this.isTaggedSumtiAhead()) {
 			return this.parseTagged();
 		}
 
@@ -984,12 +1173,13 @@ export class Parser {
 		const token = this.peekToken();
 		if (token && token.selmaho === selmaho) {
 			this.index++;
+			const frees = this.parseFrees();
 			return {
 				start: token.index,
-				end: token.index,
+				end: frees.at(-1)?.end ?? token.index,
 				type: "cmavo-with-frees",
 				cmavo: token.index,
-				frees: this.parseFrees(),
+				frees,
 			};
 		}
 		return undefined;

@@ -38,7 +38,7 @@ export function Io(props: IoProps) {
 	return (
 		<div class="mb-8">
 			<div class="input mb-4 italic">
-				<span class="text">{props.input}</span>
+				<pre>{props.input}</pre>
 			</div>
 			<div class="output ml-4">
 				<ShowParseResult output={props.output} />
@@ -52,7 +52,8 @@ export function App() {
 
 	return (
 		<div class="flex flex-col min-h-screen p-4">
-			<h1 class="text-3xl mb-8 font-bold">la sidju</h1>
+			<h1 class="text-3xl font-bold">la terska</h1>
+			<div class="mb-8">sei jboju'a laltci</div>
 			<div class="io-list">
 				{ios.map((io, index) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: static data

@@ -3,6 +3,7 @@
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import type * as G from "./grammar";
+import { Parser } from "./parse";
 import type { Token } from "./tokenize";
 
 export const TokenContext = createContext<Token[]>([]);
@@ -10,15 +11,30 @@ export const TokenContext = createContext<Token[]>([]);
 export function ShowTokens({ start, end }: { start: number; end: number }) {
 	const tokens = useContext(TokenContext);
 	return (
-		<span className="inline-flex flex-row gap-1 items-baseline mb-1">
+		<span className="inline-flex flex-row gap-2 items-baseline mb-1">
 			{tokens.slice(start, end + 1).map((token, index) => (
 				<pre
-					class="inline-block bg-black text-white rounded px-1 tracking-tighter"
+					class="inline-block font-extrabold tracking-tight"
+					style={{
+						color: new Parser([]).isTenseSelmaho(token.selmaho)
+							? "#c00080"
+							: "black",
+					}}
 					key={index}
 				>
 					{token.sourceText}
 				</pre>
 			))}
+		</span>
+	);
+}
+
+export function ShowSpan({ span }: { span: G.Span }) {
+	if (span.start <= span.end)
+		return <ShowTokens start={span.start} end={span.end} />;
+	return (
+		<span>
+			Empty span: {span.start}—{span.end}
 		</span>
 	);
 }
@@ -29,12 +45,11 @@ export function TextBox({ text }: { text: G.Text }) {
 
 export function Text1Box({ text1 }: { text1: G.Text1 }) {
 	return (
-		<div className="box row">
-			<b>text</b>
-			{text1.i && (
+		<div className="row">
+			{text1.firstSeparator && (
 				<div className="box col bg-green-100">
 					<b>separator</b>
-					<ShowTokens start={text1.i.start} end={text1.i.end} />
+					<ShowSpan span={text1.firstSeparator} />
 				</div>
 			)}
 			{text1.paragraphs.map((paragraph, index) => (
@@ -45,15 +60,14 @@ export function Text1Box({ text1 }: { text1: G.Text1 }) {
 }
 export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 	return (
-		<div className="box col">
-			<b>paragraph</b>
-			{paragraph.niho && (
-				<div className="box col bg-green-100">
-					<b>paragraph marker </b>
-					<ShowTokens start={paragraph.niho.start} end={paragraph.niho.end} />
-				</div>
-			)}
+		<div className="box col bg-gray-200 outline-none">
 			<div className="row">
+				{paragraph.niho && (
+					<div className="box col bg-green-100">
+						<b>separator</b>
+						<ShowTokens start={paragraph.niho.start} end={paragraph.niho.end} />
+					</div>
+				)}
 				<ItemBox
 					item={{
 						type: "item",
@@ -63,19 +77,17 @@ export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 						end: paragraph.end,
 					}}
 				/>
-			</div>
-			{paragraph.rest.map((item, index) => (
-				<div className="row" key={index}>
+				{paragraph.rest.map((item, index) => (
 					<ItemBox item={item} />
-				</div>
-			))}
+				))}
+			</div>
 		</div>
 	);
 }
 
 export function ItemBox({ item }: { item: G.Item }) {
 	return (
-		<div className="row">
+		<div className="row box bg-white outline-none">
 			{item.i && (
 				<div className="box col bg-green-100">
 					<b>separator</b>
@@ -113,7 +125,7 @@ export function Statement3Box({ statement3 }: { statement3: G.Statement3 }) {
 
 export function SentenceBox({ sentence }: { sentence: G.Sentence }) {
 	return (
-		<div className="box row">
+		<div className="row">
 			{sentence.terms && <TermsBox terms={sentence.terms} />}
 			{sentence.cu && (
 				<ShowTokens start={sentence.cu.start} end={sentence.cu.end} />
@@ -227,6 +239,58 @@ export function TermBox({
 	);
 }
 
+export function ExplainRoleIn({
+	role,
+	verb,
+}: {
+	role: G.Positional;
+	verb: G.Span;
+}) {
+	const tokens = useContext(TokenContext);
+	const lexemes = tokens
+		.slice(verb.start, verb.end + 1)
+		.map((token) => token.lexeme);
+
+	// unwrap SE
+	let si = 0,
+		sx = role.xIndex;
+	while (true) {
+		if (lexemes[si] === "se") {
+			sx = sx === 1 ? 2 : sx === 2 ? 1 : sx;
+		} else if (lexemes[si] === "te") {
+			sx = sx === 1 ? 3 : sx === 3 ? 1 : sx;
+		} else if (lexemes[si] === "ve") {
+			sx = sx === 1 ? 4 : sx === 4 ? 1 : sx;
+		} else if (lexemes[si] === "xe") {
+			sx = sx === 1 ? 5 : sx === 5 ? 1 : sx;
+		} else {
+			break;
+		}
+		si++;
+	}
+
+	return (
+		<span>
+			x<sub>{role.xIndex}</sub> of <i>{lexemes.join(" ")}</i>
+			{si > 0 && (
+				<span class="opacity-50">
+					<br />x<sub>{sx}</sub> of <i>{lexemes.slice(si).join(" ")}</i>
+				</span>
+			)}
+		</span>
+	);
+}
+
+export function ExplainRole({ role }: { role: G.Positional }) {
+	return (
+		<b className="flex flex-col">
+			{role.verbs.map((verb) => (
+				<ExplainRoleIn role={role} verb={verb} />
+			))}
+		</b>
+	);
+}
+
 export function SumtiBox({
 	sumti,
 }: {
@@ -235,24 +299,7 @@ export function SumtiBox({
 	const tokens = useContext(TokenContext);
 	return (
 		<div className="box col bg-amber-100">
-			{sumti.role ? (
-				<b>
-					x<sub>{sumti.role.xIndex}</sub> of{" "}
-					<i>
-						{sumti.role.verbs
-							.map((verb) =>
-								tokens
-									.slice(verb.start, verb.end + 1)
-									.map((token) => token.sourceText)
-									.join(" "),
-							)
-							.join(", ")
-							.replace(/ .* /, " … ")}
-					</i>
-				</b>
-			) : (
-				<b>noun</b>
-			)}
+			{sumti.role ? <ExplainRole role={sumti.role} /> : <b>noun</b>}
 			<div className="row">
 				<ShowTokens start={sumti.start} end={sumti.end} />
 			</div>

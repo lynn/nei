@@ -33,9 +33,15 @@ export interface Text extends Span {
 export interface Text1 extends Span {
 	type: "text-1";
 	// TODO: [(I [jek | joik] [[stag] BO] #) ... | NIhO ... #]
-	// for now just [I #]:
-	i?: CmavoWithFrees;
+	// for now just [I #] or [NIhO #]:
+	firstSeparator: Nihos | CmavoWithFrees | undefined;
 	paragraphs: Paragraph[];
+}
+
+export interface Nihos extends Span {
+	type: "nihos";
+	nihos: TokenIndex[];
+	frees: Free[];
 }
 
 /// paragraphs = paragraph [NIhO ... # paragraphs]
@@ -43,7 +49,7 @@ export interface Text1 extends Span {
 
 export interface Paragraph extends Span {
 	type: "paragraph";
-	niho?: CmavoWithFrees;
+	niho: Nihos | undefined;
 	first: Statement | Fragment;
 	rest: Item[];
 }
@@ -301,7 +307,7 @@ export interface Sumti6Lahe extends Span {
 
 export interface Sumti6Nahebo extends Span {
 	type: "sumti-6-nahebo";
-	nahe: CmavoWithFrees;
+	nahe: TokenIndex;
 	bo: CmavoWithFrees;
 	// relative clauses here feels like crimes. not condoning it
 	sumti: Sumti<Floating>;
