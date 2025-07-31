@@ -238,14 +238,17 @@ export function SumtiBox({
 			{sumti.role ? (
 				<b>
 					x<sub>{sumti.role.xIndex}</sub> of{" "}
-					{sumti.role.verbs
-						.map((verb) =>
-							tokens
-								.slice(verb.start, verb.end + 1)
-								.map((token) => token.sourceText)
-								.join(" "),
-						)
-						.join(", ")}
+					<i>
+						{sumti.role.verbs
+							.map((verb) =>
+								tokens
+									.slice(verb.start, verb.end + 1)
+									.map((token) => token.sourceText)
+									.join(" "),
+							)
+							.join(", ")
+							.replace(/ .* /, " … ")}
+					</i>
 				</b>
 			) : (
 				<b>noun</b>
@@ -267,7 +270,6 @@ export function NakuBox({ term }: { term: G.Naku }) {
 		</div>
 	);
 }
-
 
 export function TaggedBox({ term }: { term: G.Tagged }) {
 	return (
