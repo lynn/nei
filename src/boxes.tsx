@@ -223,7 +223,7 @@ export function TermBox({
 	) : term.type === "naku" ? (
 		<NakuBox term={term} />
 	) : (
-		"idk"
+		<TaggedBox term={term} />
 	);
 }
 
@@ -258,10 +258,21 @@ export function SumtiBox({
 }
 
 export function NakuBox({ term }: { term: G.Naku }) {
-	const tokens = useContext(TokenContext);
 	return (
 		<div className="box col">
 			<b>clause neg.</b>
+			<div className="row">
+				<ShowTokens start={term.start} end={term.end} />
+			</div>
+		</div>
+	);
+}
+
+
+export function TaggedBox({ term }: { term: G.Tagged }) {
+	return (
+		<div className="box col bg-purple-100">
+			<b>tagged</b>
 			<div className="row">
 				<ShowTokens start={term.start} end={term.end} />
 			</div>

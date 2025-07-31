@@ -199,7 +199,7 @@ export type Term<Role> = Sumti<Role> | Tagged | Naku; // TODO: others
 export interface Tagged extends Span {
 	type: "tagged";
 	tagOrFa: Tag | CmavoWithFrees;
-	sumtiOrKu: Sumti<Floating> | CmavoWithFrees;
+	sumtiOrKu: Sumti<Floating> | CmavoWithFrees | undefined;
 }
 
 export interface Naku extends Span {
@@ -708,24 +708,133 @@ export interface TenseModal extends Span {
 ///     | KI
 ///     | CUhE
 
-export interface SimpleTenseModal extends Span {
+export type SimpleTenseModal = StmBai | StmTense | StmCmavo;
+
+export interface StmBai extends Span {
+	type: "stm-bai";
 	nahe: TokenIndex | undefined;
 	se: TokenIndex | undefined;
 	bai: TokenIndex;
 	nai: TokenIndex | undefined;
 	ki: TokenIndex | undefined;
-	// TODO: others
+}
+
+export interface StmTense extends Span {
+	type: "stm-tense";
+	nahe: TokenIndex | undefined;
+	tense: Timespace | Spacetime | undefined;
+	caha: TokenIndex | undefined;
+	ki: TokenIndex | undefined;
+}
+
+export interface StmCmavo extends Span {
+	type: "stm-cmavo";
+	kiOrCuhe: TokenIndex;
+}
+
+export interface Timespace extends Span {
+	type: "timespace";
+	time: Time;
+	space: Space | undefined;
+}
+
+export interface Spacetime extends Span {
+	type: "spacetime";
+	space: Space;
+	time: Time | undefined;
 }
 
 /// time = ZI & time-offset ... & ZEhA [PU [NAI]] & interval-property ...
+
+export interface Time extends Span {
+	type: "time";
+	zi: CmavoWithFrees | undefined;
+	timeOffsets: TimeOffset[];
+	zehapu: Zehapu | undefined;
+	intervalProperties: IntervalProperty[];
+}
+
+export interface Zehapu extends Span {
+	type: "zehapu";
+	zeha: TokenIndex;
+	pu: TokenIndex | undefined;
+	nai: TokenIndex | undefined;
+}
+
 /// time-offset = PU [NAI] [ZI]
+
+export interface TimeOffset extends Span {
+	type: "time-offset";
+	pu: TokenIndex;
+	nai: TokenIndex | undefined;
+	zi: TokenIndex | undefined;
+}
+
 /// space = VA & space-offset ... & space-interval & (MOhI space-offset)
+
+export interface Space extends Span {
+	type: "space";
+	va: CmavoWithFrees | undefined;
+	spaceOffsets: SpaceOffset[];
+	spaceIntervals: SpaceInterval[];
+	motion: Motion | undefined;
+}
+
+export interface Motion extends Span {
+	type: "motion";
+	mohi: TokenIndex;
+	spaceOffset: SpaceOffset | undefined;
+}
+
 /// space-offset = FAhA [NAI] [VA]
+
+export interface SpaceOffset extends Span {
+	type: "space-offset";
+	faha: TokenIndex;
+	nai: TokenIndex | undefined;
+	va: TokenIndex | undefined;
+}
+
 /// space-interval = ((VEhA & VIhA) [FAhA [NAI]]) & space-int-props
+
+export interface SpaceInterval extends Span {
+	type: "space-interval";
+	vxha: Vxha | undefined;
+	spaceIntProp: SpaceIntProp[];
+}
+
+export interface Vxha extends Span {
+	type: "vxha";
+	veha: TokenIndex | undefined;
+	viha: TokenIndex | undefined;
+	faha: TokenIndex | undefined;
+	nai: TokenIndex | undefined;
+}
+
 /// space-int-props = (FEhE interval-property) ...
+
+export interface SpaceIntProp extends Span {
+	type: "space-int-prop";
+	fehe: TokenIndex;
+	intervalProperty: IntervalProperty;
+}
+
 /// interval-property = number ROI [NAI] | TAhE [NAI] | ZAhO [NAI]
 
-// TODO
+export type IntervalProperty = IpRoi | IpCmavo;
+
+export interface IpRoi extends Span {
+	type: "interval-property-roi";
+	number: Namcu;
+	roi: TokenIndex;
+	nai: TokenIndex | undefined;
+}
+
+export interface IpCmavo extends Span {
+	type: "interval-property-cmavo";
+	taheOrZaho: TokenIndex;
+	nai: TokenIndex | undefined;
+}
 
 /// free =
 ///     SEI # [terms [CU #]] selbri /SEhU/

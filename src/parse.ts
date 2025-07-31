@@ -53,6 +53,14 @@ import type {
 	BrivlaWithFrees,
 	Span,
 	Naku,
+	Tagged,
+	Tag,
+	TenseModal,
+	Free,
+	SimpleTenseModal,
+	StmBai,
+	Timespace,
+	StmTense,
 } from "./grammar";
 
 class ParseError extends Error {
@@ -189,7 +197,7 @@ export class Parser {
 					start: jek.index,
 					end: jek.index,
 					cmavo: jek.index,
-					frees: [], // TODO parse frees
+					frees: this.parseFrees(),
 				},
 			};
 		}
@@ -647,6 +655,166 @@ export class Parser {
 		};
 	}
 
+	private isSumtiAhead(): boolean {
+		return this.isAhead(["PA"]) || this.isSumti6Ahead();
+	}
+
+	private isTaggedAhead(): boolean {
+		console.log(this.index);
+		// kinda ugly
+		const oldIndex = this.index;
+		let selmaho: Selmaho | undefined;
+		while (true) {
+			const selmaho = this.tokens[this.index]?.selmaho;
+			if (selmaho === "FIhO") return true;
+			if (
+				[
+					"FA",
+					"BAI",
+					"CAhA",
+					"KI",
+					"CUhE",
+					"ZI",
+					"ZEhA",
+					"PU",
+					"NAI",
+					"VA",
+					"MOhI",
+					"FAhA",
+					"VEhA",
+					"VIhA",
+					"FEhE",
+					// TODO: handle number+roi here
+					"TAhE",
+					"ZAhO",
+				].includes(selmaho)
+			) {
+				this.index++;
+				continue;
+			}
+			break;
+		}
+		if (this.index === oldIndex) return false; // no tag
+
+		const ok = this.isAhead(["KU"]) || this.isSumtiAhead();
+		this.index = oldIndex;
+		return ok;
+	}
+
+	public parseTag(): Tag {
+		const tenseModal = this.parseTenseModal();
+		return {
+			type: "tag",
+			start: tenseModal.start,
+			end: tenseModal.end,
+			first: tenseModal,
+		};
+	}
+
+	public parseTenseModal(): TenseModal {
+		const simpleTenseModal = this.parseSimpleTenseModal();
+		const frees = this.parseFrees();
+		return {
+			type: "tense-modal",
+			start: simpleTenseModal.start,
+			end: simpleTenseModal.end,
+			first: simpleTenseModal,
+			frees,
+		};
+	}
+
+	public parseSimpleTenseModal(): SimpleTenseModal {
+		if (this.isAhead(["KI"]) || this.isAhead(["CUhE"])) {
+			const kiOrCuhe = this.nextToken()!;
+			return {
+				type: "stm-cmavo",
+				start: kiOrCuhe.index,
+				end: kiOrCuhe.index,
+				kiOrCuhe: kiOrCuhe.index,
+			};
+		}
+		if (
+			this.isAhead(["NAhE", "SE", "BAI"]) ||
+			this.isAhead(["NAhE", "BAI"]) ||
+			this.isAhead(["SE"]) ||
+			this.isAhead(["BAI"])
+		) {
+			return this.parseStmBai();
+		}
+		return this.parseStmTense();
+	}
+
+	public tryParseCmavo(selmaho: Selmaho): TokenIndex | undefined {
+		if (this.peekToken()?.selmaho === selmaho) {
+			return this.index++;
+		}
+	}
+
+	public parseStmBai(): StmBai {
+		const nahe = this.tryParseCmavo("NAhE");
+		const se = this.tryParseCmavo("SE");
+		const bai = this.tryParseCmavo("BAI")!;
+		const nai = this.tryParseCmavo("NAI");
+		const ki = this.tryParseCmavo("KI");
+		return {
+			type: "stm-bai",
+			start: nahe ?? se ?? bai,
+			end: ki ?? nai ?? bai,
+			nahe,
+			se,
+			bai,
+			nai,
+			ki,
+		};
+	}
+
+	public parseStmTense(): StmTense {
+		const nahe = this.tryParseCmavo("NAhE");
+		const tense = this.tryParseTimespace() ?? this.tryParseSpacetime();
+		const caha = this.tryParseCmavo("CAhA");
+		const ki = this.tryParseCmavo("KI");
+
+		if (!tense && !caha) {
+			// We should never hit this because we predict it
+			throw new ParseError("Bad stm-tense", this.index);
+		}
+
+		return {
+			type: "stm-tense",
+			start: (nahe ?? tense?.start ?? caha)!,
+			end: (ki ?? caha ?? tense?.end)!,
+			nahe,
+			tense,
+			caha,
+			ki,
+		};
+	}
+
+	public tryParseTimespace(): Timespace | undefined {
+		// throw new Unsupported("Timespace");
+		return undefined;
+	}
+
+	public tryParseSpacetime(): Timespace | undefined {
+		// throw new Unsupported("Timespace");
+		return undefined;
+	}
+
+	public parseTagged(): Tagged {
+		const fa = this.tryParseCmavoWithFrees("FA");
+		const tagOrFa = fa ?? this.parseTag();
+		const sumtiOrKu = this.isSumtiAhead()
+			? this.parseSumti()
+			: this.tryParseCmavoWithFrees("KU");
+		return {
+			type: "tagged",
+			start: tagOrFa.start,
+			end: sumtiOrKu?.end ?? tagOrFa?.end,
+			tagOrFa,
+			sumtiOrKu,
+		};
+	}
+
 	public tryParseTerm(): Term<Floating> | undefined {
 		const token = this.peekToken();
 		if (!token) {
@@ -658,6 +826,9 @@ export class Parser {
 		if (this.isAhead(["PA"]) || this.isSumti6Ahead()) {
 			return this.parseSumti();
 		}
+		if (this.isTaggedAhead()) {
+			return this.parseTagged();
+		}
 
 		return undefined; // Not a term
 	}
@@ -666,6 +837,20 @@ export class Parser {
 		const na = this.nextToken()!;
 		const ku = this.tryParseCmavoWithFrees("KU")!;
 		return { type: "naku", start: na.index, end: ku.end, na: na.index, ku };
+	}
+
+	public parseFrees(): Free[] {
+		const frees: Free[] = [];
+		while (true) {
+			const token = this.peekToken();
+			if (token?.selmaho === "UI") {
+				frees.push({ type: "free", start: token.index, end: token.index });
+				this.index++;
+			} else {
+				break;
+			}
+		}
+		return frees;
 	}
 
 	public tryParseCmavoWithFrees(selmaho: Selmaho): CmavoWithFrees | undefined {
@@ -677,8 +862,7 @@ export class Parser {
 				end: token.index,
 				type: "cmavo-with-frees",
 				cmavo: token.index,
-				// TODO parse frees
-				frees: [],
+				frees: this.parseFrees(),
 			};
 		}
 		return undefined;
@@ -695,7 +879,7 @@ export class Parser {
 			brivla: token.index,
 			start: token.index,
 			end: token.index,
-			frees: [],
+			frees: this.parseFrees(),
 		};
 	}
 
@@ -818,12 +1002,14 @@ export class Parser {
 						}
 					: term,
 			);
-			const newFilled = state.filled | (1n << BigInt(state.x));
-			let newX = state.x;
-			while (newFilled & (1n << BigInt(newX))) {
-				newX++;
+			if (term.type === "sumti") {
+				const newFilled = state.filled | (1n << BigInt(state.x));
+				let newX = state.x;
+				while (newFilled & (1n << BigInt(newX))) {
+					newX++;
+				}
+				state = { x: newX, filled: newFilled };
 			}
-			state = { x: newX, filled: newFilled };
 		}
 
 		const placedTailTerms: TailTerms<Positional> = {
@@ -880,7 +1066,6 @@ export class Parser {
 
 		while (true) {
 			const term = this.tryParseTerm();
-			console.log("Term at", this.index, term);
 			if (!term) break;
 			if (start === Number.POSITIVE_INFINITY) start = term.start;
 			end = term.end;
@@ -918,6 +1103,7 @@ export function parse(tokens: Token[]): ParseResult {
 			return { success: false, error: new ParseError("Failed to parse bridi") };
 		}
 	} catch (error) {
+		console.error(error);
 		if (error instanceof ParseError || error instanceof Unsupported) {
 			return { success: false, error };
 		} else {
