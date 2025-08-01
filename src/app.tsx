@@ -38,31 +38,14 @@ export function ShowSnapshots({
 	const [i, setI] = useState(0);
 
 	return (
-		<div className="flex flex-col gap-2 items-start">
-			<progress value={i} max={snapshots.length - 1} />
-			<div className="flex flex-row gap-2">
-				<button
-					className="button"
-					type="button"
-					onClick={() => setI(Math.max(i - 1, 0))}
-				>
-					Back
-				</button>
-				<button
-					className="button"
-					type="button"
-					onClick={() => setI(Math.min(i + 1, snapshots.length - 1))}
-				>
-					Forward
-				</button>
-				<button
-					className="button"
-					type="button"
-					onClick={() => setI(Math.min(i + 10, snapshots.length - 1))}
-				>
-					+10
-				</button>
-			</div>
+		<div className="flex flex-col gap-2 items-start my-8 mx-8">
+			<input
+				type="range"
+				value={i}
+				min={0}
+				max={snapshots.length - 1}
+				onChange={(e) => setI(+e.currentTarget.value)}
+			/>
 			<div className="flex flex-row font-mono">
 				{tokens.map((token) => (
 					<SnapshotToken
@@ -87,14 +70,14 @@ export function ShowParseResult({ output }: { output: ParseResult }) {
 			return (
 				<div class="px-4 py-2">
 					<div class="parse-result flex flex-col gap-2">
-						<ShowSnapshots
-							tokens={output.tokens}
-							snapshots={output.snapshots}
-						/>
 						The input could not be parsed.
 						<TokenContext.Provider value={output.tokens}>
 							<TextBox text={output.consumed} remainder={output.remainder} />
 						</TokenContext.Provider>
+						<ShowSnapshots
+							tokens={output.tokens}
+							snapshots={output.snapshots}
+						/>
 					</div>
 				</div>
 			);
@@ -102,10 +85,10 @@ export function ShowParseResult({ output }: { output: ParseResult }) {
 	}
 	return (
 		<div class="parse-result">
-			<ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} />
 			<TokenContext.Provider value={output.tokens}>
 				<TextBox text={output.text} />
 			</TokenContext.Provider>
+			<ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} />
 		</div>
 	);
 }

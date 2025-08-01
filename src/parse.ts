@@ -617,7 +617,9 @@ export class Parser {
 	public parseSumti(): Sumti<Floating> {
 		const sumti1 = this.parseSumti1();
 		const vuho = this.tryParseCmavoWithFrees("VUhO");
-		const relativeClauses = vuho ? this.tryParseRelativeClauses() : undefined;
+		const relativeClauses = vuho
+			? this.tryParseRelativeClauses(sumti1)
+			: undefined;
 		if (vuho && relativeClauses === undefined) {
 			throw new ParseError("Expected relative clause after vu'o");
 		}
@@ -675,8 +677,22 @@ export class Parser {
 
 	public parseSumti5(): Sumti5 {
 		const outerQuantifier = this.tryParseQuantifier();
+		if (outerQuantifier && this.isVerbAhead()) {
+			const selbri = this.parseSelbri();
+			const ku = this.tryParseCmavoWithFrees("KU");
+			const relativeClauses = this.tryParseRelativeClauses(selbri);
+			return {
+				type: "sumti-5-small",
+				start: outerQuantifier.start,
+				end: relativeClauses?.end ?? ku?.end ?? selbri.end,
+				quantifier: outerQuantifier,
+				selbri,
+				ku,
+				relativeClauses,
+			};
+		}
 		const sumti6 = this.parseSumti6();
-		const relativeClauses = this.tryParseRelativeClauses();
+		const relativeClauses = this.tryParseRelativeClauses(sumti6);
 		return {
 			type: "sumti-5-large",
 			start: outerQuantifier?.start ?? sumti6.start,
@@ -771,8 +787,10 @@ export class Parser {
 		return undefined;
 	}
 
-	public tryParseRelativeClauses(): RelativeClauses | undefined {
-		const relativeClause = this.tryParseRelativeClause();
+	public tryParseRelativeClauses(
+		antecedent: Span,
+	): RelativeClauses | undefined {
+		const relativeClause = this.tryParseRelativeClause(antecedent);
 		if (!relativeClause) return undefined;
 		return {
 			type: "relative-clauses",
@@ -782,7 +800,7 @@ export class Parser {
 		};
 	}
 
-	public tryParseRelativeClause(): RelativeClause | undefined {
+	public tryParseRelativeClause(antecedent: Span): RelativeClause | undefined {
 		const noi = this.tryParseCmavoWithFrees("NOI");
 		if (!noi) return undefined;
 		const subsentence = this.parseSubsentence();
@@ -791,7 +809,7 @@ export class Parser {
 			type: "relative-clause",
 			start: noi.start,
 			end: kuho?.end ?? subsentence?.end,
-			antecedent: undefined,
+			antecedent,
 			noi,
 			subsentence,
 			kuho,
@@ -913,7 +931,9 @@ export class Parser {
 	public parseSumtiTail(): SumtiTail {
 		this.begin("sumti-tail");
 		const owner = this.isSumti6Ahead() ? this.parseSumti6() : undefined;
-		const relativeClauses = this.tryParseRelativeClauses();
+		const relativeClauses = this.tryParseRelativeClauses(
+			owner ?? { start: this.index - 1, end: this.index - 1 },
+		);
 		const tail = this.parseSumtiTail1();
 		return this.parsed("sumti-tail", {
 			type: "sumti-tail",
@@ -927,7 +947,7 @@ export class Parser {
 
 	public parseSumtiTail1(): SumtiTail1 {
 		const selbri = this.parseSelbri();
-		const relativeClauses = this.tryParseRelativeClauses();
+		const relativeClauses = this.tryParseRelativeClauses(selbri);
 		return {
 			type: "sumti-tail-1",
 			start: selbri.start,
@@ -1483,7 +1503,15 @@ export class Parser {
 			if (term.type === "sumti") {
 				headPositions.push(headState.x);
 				headState.filled |= 1n << BigInt(headState.x);
-				headState.x++;
+				while (headState.filled & (1n << BigInt(headState.x))) headState.x++;
+			} else if (term.type === "tagged" && term.tagOrFa.type !== "tag") {
+				// FA
+				const num =
+					"aeiou".indexOf(this.tokens[term.tagOrFa.cmavo].lexeme[1]) + 1;
+				headPositions.push(num);
+				headState.filled |= 1n << BigInt(num);
+				headState.x = num;
+				while (headState.filled & (1n << BigInt(headState.x))) headState.x++;
 			} else {
 				headPositions.push(NaN);
 			}
@@ -1507,7 +1535,7 @@ export class Parser {
 										...term,
 										role: {
 											roles: tertaus.map((t) => ({
-												xIndex: i + 1,
+												xIndex: headPositions[i],
 												verb: t.tertau,
 											})),
 										},
@@ -1664,6 +1692,16 @@ export class Parser {
 					while (newFilled & (1n << BigInt(newX))) {
 						newX++;
 					}
+					return { ...s, state: { x: newX, filled: newFilled } };
+				});
+			} else if (term.type === "tagged" && term.tagOrFa.type !== "tag") {
+				// FA
+				const fa = term.tagOrFa;
+				iterTertaus = iterTertaus.map((s) => {
+					const num = "aeiou".indexOf(this.tokens[fa.cmavo].lexeme[1]) + 1;
+					const newFilled = s.state.filled | (1n << BigInt(num));
+					let newX = num;
+					while (newFilled & (1n << BigInt(newX))) newX++;
 					return { ...s, state: { x: newX, filled: newFilled } };
 				});
 			}

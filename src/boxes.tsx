@@ -45,6 +45,14 @@ export function ShowSpan({ span }: { span: G.Span | undefined }) {
 	);
 }
 
+function spanToString(span: G.Span): string {
+	const tokens = useContext(TokenContext);
+	return tokens
+		.slice(span.start, span.end + 1)
+		.map((token) => token.lexeme)
+		.join(" ");
+}
+
 export function TextBox({
 	text,
 	remainder,
@@ -596,7 +604,14 @@ export function RelativeClausesBox({ span }: { span: G.RelativeClauses }) {
 export function RelativeClauseBox({ span }: { span: G.RelativeClause }) {
 	return (
 		<div className="box col bg-white">
-			<b>relative clause</b>
+			<b>
+				relative clause{" "}
+				{span.antecedent && (
+					<span>
+						to <i>{spanToString(span.antecedent)}</i>
+					</span>
+				)}
+			</b>
 			<div className="row">
 				<ShowSpan span={span.noi} />
 				<SubsentenceBox subsentence={span.subsentence} />
