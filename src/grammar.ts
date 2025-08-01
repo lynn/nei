@@ -469,7 +469,7 @@ export interface TanruUnit extends Span {
 export interface TanruUnit1 extends Span {
 	type: "tanru-unit-1";
 	tanruUnit2: TanruUnit2;
-	// TODO: linkargs
+	linkargs: Linkargs | undefined;
 }
 
 /// tanru-unit-2 =
@@ -559,7 +559,19 @@ export interface TuNu extends Span {
 /// linkargs = BE # term [links] /BEhO#/
 /// links = BEI # term [links]
 
-// TODO
+export interface Linkargs extends Span {
+	type: "linkargs";
+	be: CmavoWithFrees;
+	term: Term<Floating>;
+	links: BeiLink[];
+	beho: CmavoWithFrees | undefined;
+}
+
+export interface BeiLink extends Span {
+	type: "bei-link";
+	bei: CmavoWithFrees;
+	term: Term<Floating>;
+}
 
 /// quantifier = number /BOI#/ | VEI # mex /VEhO#/
 

@@ -45,6 +45,7 @@ export function ShowSnapshots({
 				min={0}
 				max={snapshots.length - 1}
 				onChange={(e) => setI(+e.currentTarget.value)}
+				onMouseMove={(e) => setI(+e.currentTarget.value)}
 			/>
 			<div className="flex flex-row font-mono">
 				{tokens.map((token) => (

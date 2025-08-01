@@ -251,15 +251,21 @@ export function BridiTail3Box({
 }) {
 	return (
 		<div className="row">
-			<SelbriBox selbri={bridiTail3.selbri} />
+			<SelbriBox selbri={bridiTail3.selbri} isVerb={true} />
 			<TailTermsBox tailTerms={bridiTail3.tailTerms} />
 		</div>
 	);
 }
 
-export function SelbriBox({ selbri }: { selbri: G.Selbri }) {
+export function SelbriBox({
+	selbri,
+	isVerb,
+}: {
+	selbri: G.Selbri;
+	isVerb: boolean;
+}) {
 	return (
-		<div className="box col bg-blue-100">
+		<div className={`box col${isVerb ? " bg-blue-100" : " outline-dotted"}`}>
 			<b>selbri</b>
 			<SelbriInnerBox selbri={selbri} />
 		</div>
@@ -328,7 +334,12 @@ export function TanruUnitBox({ unit }: { unit: G.TanruUnit }) {
 }
 
 export function TanruUnit1Box({ unit }: { unit: G.TanruUnit1 }) {
-	return <TanruUnit2Box unit={unit.tanruUnit2} />;
+	return (
+		<div class="row">
+			<TanruUnit2Box unit={unit.tanruUnit2} />
+			<ShowSpan span={unit.linkargs} />
+		</div>
+	);
 }
 
 export function TanruUnit2Box({ unit }: { unit: G.TanruUnit2 }) {
@@ -344,7 +355,11 @@ export function TuNuBox({ unit }: { unit: G.TuNu }) {
 		<div class="row">
 			<ShowSpan span={unit.nu} />
 			<SubsentenceBox subsentence={unit.subsentence} />
-			<ShowSpan span={unit.kei} />
+			{unit.kei ? (
+				<ShowSpan span={unit.kei} />
+			) : (
+				<i className="opacity-50 py-1">(kei)</i>
+			)}
 		</div>
 	);
 }
@@ -537,7 +552,15 @@ export function Sumti5Box({ span }: { span: G.Sumti5 }) {
 }
 
 export function Sumti5SmallBox({ span }: { span: G.Sumti5Small }) {
-	return <ShowSpan span={span} />;
+	return (
+		<div className="row">
+			{span.quantifier && <ShowSpan span={span.quantifier} />}
+			<SelbriBox selbri={span.selbri} isVerb={false} />
+			{span.relativeClauses && (
+				<RelativeClausesBox span={span.relativeClauses} />
+			)}
+		</div>
+	);
 }
 
 export function Sumti5LargeBox({ span }: { span: G.Sumti5Large }) {
@@ -585,7 +608,7 @@ export function SumtiTailBox({ span }: { span: G.SumtiTail }) {
 export function SumtiTail1Box({ span }: { span: G.SumtiTail1 }) {
 	return (
 		<div className="row">
-			{span.selbri && <SelbriBox selbri={span.selbri} />}
+			{span.selbri && <SelbriBox selbri={span.selbri} isVerb={false} />}
 			{span.relativeClauses && (
 				<RelativeClausesBox span={span.relativeClauses} />
 			)}
@@ -615,7 +638,11 @@ export function RelativeClauseBox({ span }: { span: G.RelativeClause }) {
 			<div className="row">
 				<ShowSpan span={span.noi} />
 				<SubsentenceBox subsentence={span.subsentence} />
-				<ShowSpan span={span.kuho} />
+				{span.kuho ? (
+					<ShowSpan span={span.kuho} />
+				) : (
+					<i className="opacity-50 py-1">(ku'o)</i>
+				)}
 			</div>
 		</div>
 	);

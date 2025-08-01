@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: <explanation> */
 
 import type {
+	BeiLink,
 	BridiTail,
 	BridiTail1,
 	BridiTail2,
@@ -18,6 +19,7 @@ import type {
 	Item,
 	LerfuString,
 	LerfuWord,
+	Linkargs,
 	Motion,
 	Naku,
 	Namcu,
@@ -472,11 +474,44 @@ export class Parser {
 
 	public parseTanruUnit1(): TanruUnit1 {
 		const tanruUnit2 = this.parseTanruUnit2();
+		const linkargs = this.tryParseLinkArgs();
 		return {
 			type: "tanru-unit-1",
 			start: tanruUnit2.start,
-			end: tanruUnit2.end,
+			end: linkargs?.end ?? tanruUnit2.end,
 			tanruUnit2,
+			linkargs,
+		};
+	}
+
+	public tryParseLinkArgs(): Linkargs | undefined {
+		const be = this.tryParseCmavoWithFrees("BE");
+		if (be === undefined) return undefined;
+		const term = this.tryParseTerm();
+		if (!term) throw new ParseError("no term after be");
+		const links: BeiLink[] = [];
+		while (this.peekToken()?.selmaho === "BEI") {
+			const bei = this.tryParseCmavoWithFrees("BEI")!;
+			const term = this.tryParseTerm();
+			if (!term) throw new ParseError("no term after bei");
+			links.push({
+				type: "bei-link",
+				start: bei.start,
+				end: term.end,
+				bei,
+				term,
+			});
+		}
+		const beho = this.tryParseCmavoWithFrees("BEhO");
+
+		return {
+			type: "linkargs",
+			start: be.start,
+			end: beho?.end ?? (links.length ? links[links.length - 1].end : term.end),
+			be,
+			term,
+			links,
+			beho,
 		};
 	}
 
