@@ -34,10 +34,10 @@ export function tokenize(text: string): Token[] {
 		for (const word of line.matchAll(/\S+/g)) {
 			const wordStart = word.index + 1;
 			const wordEnd = word.index + word[0].length;
-			if (/^([bcdfgjklmnprstvxz'][aeiouy+])+$/.test(word[0])) {
+			if (/^([bcdfgjklmnprstvxz.']?[aeiouy]+)+$/.test(word[0])) {
 				// This is a cmavo compound. Split it into cmavo:
 				for (const cmavo of word[0].matchAll(
-					/[bcdfgjklmnprstvxz][aeiouy+]('[aeiouy]+)*/g,
+					/[bcdfgjklmnprstvxz.]?[aeiouy]+('[aeiouy]+)*/g,
 				)) {
 					const cmavoStart = wordStart + cmavo.index;
 					const cmavoEnd = wordStart + cmavo.index + cmavo[0].length - 1;

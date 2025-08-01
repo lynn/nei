@@ -294,6 +294,7 @@ export type Sumti6 =
 	| Sumti6Nahebo
 	| Sumti6Koha
 	| Sumti6Lerfu
+	| Sumti6La
 	| Sumti6Le
 	| Sumti6Li; // TODO: quotes
 

@@ -99,13 +99,57 @@ interface TerbriState {
 	filled: bigint;
 }
 
+export interface Snapshot {
+	index: TokenIndex;
+	state: string[];
+	completed?: Span;
+}
+
 export class Parser {
 	public readonly tokens: Token[];
 	public index: TokenIndex;
+	public state: string[];
+	public snapshots: Snapshot[];
+	public depth = 0;
 
 	constructor(tokens: Token[]) {
 		this.tokens = tokens;
 		this.index = 0;
+		this.state = [];
+		this.snapshots = [];
+	}
+
+	private takeSnapshot(completed?: Span) {
+		this.snapshots.push({
+			index: this.index,
+			state: [...this.state],
+			completed,
+		});
+	}
+
+	private begin(type: string) {
+		this.state.push(`Parsing ${type}`);
+		this.takeSnapshot();
+	}
+
+	private log(text: string, completed?: Span) {
+		if (this.state.length) this.state.pop();
+		this.state.push(text);
+		this.takeSnapshot(completed);
+	}
+
+	private parsed<T extends Span>(type: string, result: T): T {
+		this.state.pop();
+		this.state.push(
+			`Finished ${type} (${this.tokens
+				.slice(result.start, result.end + 1)
+				.map((x) => x.lexeme)
+				.join(" ")})`,
+		);
+		this.takeSnapshot(result);
+		this.state.pop();
+
+		return result;
 	}
 
 	private nextToken(): Token | undefined {
@@ -123,14 +167,16 @@ export class Parser {
 	}
 
 	public parseText(): Text {
+		this.begin("text");
+		const frees = this.parseFrees();
 		const text1 = this.parseText1();
-		return {
+		return this.parsed("text", {
 			type: "text",
-			free: [], // TODO free before text1
-			start: text1.start,
+			free: frees,
+			start: frees.length ? frees[0].start : text1.start,
 			end: text1.end,
 			text1,
-		};
+		});
 	}
 
 	public parseText1(): Text1 {
@@ -173,6 +219,7 @@ export class Parser {
 	}
 
 	public parseParagraph(): Paragraph {
+		this.begin("paragraph");
 		const niho = this.tryParseNihos();
 		const first = this.parseTem();
 		const items: Item[] = [];
@@ -181,26 +228,27 @@ export class Parser {
 			items.push(item);
 		}
 
-		return {
+		return this.parsed("paragraph", {
 			type: "paragraph",
 			start: niho?.start ?? first.start,
 			end: items.length > 0 ? items[items.length - 1].end : first.end,
 			niho,
 			first,
 			rest: items,
-		};
+		});
 	}
 
 	public parseItem(): Item {
+		this.begin("item");
 		const i = this.tryParseCmavoWithFrees("I");
 		const tem = this.parseTem();
-		return {
+		return this.parsed("item", {
 			type: "item",
 			start: i?.start ?? tem.start,
 			end: tem.end,
 			i,
 			tem,
-		};
+		});
 	}
 
 	public parseTem(): Statement | Fragment {
@@ -208,14 +256,15 @@ export class Parser {
 	}
 
 	public parseStatement(): Statement {
+		this.begin("statement");
 		const first = this.parseStatement1();
-		return {
+		return this.parsed("statement", {
 			type: "statement",
 			start: first.start,
 			end: first.end,
 			prenexes: [], // TODO
 			statement1: first,
-		};
+		});
 	}
 
 	public tryParseIjek(): Ijek | undefined {
@@ -289,17 +338,18 @@ export class Parser {
 	}
 
 	public parseSelbri(): Selbri {
+		this.begin("selbri");
 		const selmaho = this.peekToken()?.selmaho;
 		const tag =
 			selmaho && this.isTenseSelmaho(selmaho) ? this.parseTag() : undefined;
 		const selbri1 = this.parseSelbri1();
-		return {
+		return this.parsed("selbri", {
 			type: "selbri",
 			start: tag?.start ?? selbri1.start,
 			end: selbri1.end,
 			tag,
 			selbri1,
-		};
+		});
 	}
 
 	public parseSelbri1(): Selbri1 {
@@ -335,7 +385,7 @@ export class Parser {
 	}
 
 	private isVerbAhead(): boolean {
-		return (
+		const decision =
 			(this.isAhead(["NAhE"]) && !this.isAhead(["NAhE", "BO"])) ||
 			this.isAhead(["BRIVLA"]) ||
 			this.isAhead(["GOhA"]) ||
@@ -343,8 +393,9 @@ export class Parser {
 			this.isAhead(["ME"]) || // TODO: moi, tricky lookahead (.i mi panononono da/moi)
 			this.isAhead(["SE"]) ||
 			this.isAhead(["JAI"]) ||
-			this.isAhead(["NU"])
-		);
+			this.isAhead(["NU"]);
+
+		return decision;
 	}
 
 	public parseSelbri3(): Selbri3 {
@@ -352,6 +403,7 @@ export class Parser {
 		const tanru: Selbri4[] & { 0: Selbri4 } = [first];
 		let end = first.end;
 
+		this.log("Is this selbri a tanru?", first);
 		while (this.isVerbAhead()) {
 			const next = this.parseSelbri4();
 			end = next.end;
@@ -743,6 +795,18 @@ export class Parser {
 			return { type: "sumti-6-koha", start: koha.start, end: koha.end, koha };
 		}
 
+		if (token.selmaho === "BY") {
+			const lerfuString = this.tryParseLerfuString()!;
+			const boi = this.tryParseCmavoWithFrees("BOI");
+			return {
+				type: "sumti-6-lerfu",
+				start: lerfuString.start,
+				end: boi?.end ?? lerfuString.end,
+				lerfuString,
+				boi,
+			};
+		}
+
 		if (token.selmaho === "LAhE") {
 			const lahe = this.tryParseCmavoWithFrees("LAhE")!;
 			const sumti = this.parseSumti();
@@ -771,7 +835,45 @@ export class Parser {
 			};
 		}
 
+		if (token.selmaho === "LA") {
+			const la = this.tryParseCmavoWithFrees("LA")!;
+			// TODO: relative clauses...
+			const names = this.zeroOrMore("CMEVLA");
+			const frees = this.parseFrees();
+			if (names.length) {
+				return {
+					type: "sumti-6-la",
+					start: la.start,
+					end: names[names.length - 1],
+					la,
+					relativeClauses: undefined,
+					cmevlas: names,
+					frees,
+				};
+			} else {
+				// TODO: DRY?
+				const sumtiTail = this.parseSumtiTail();
+				const ku = this.tryParseCmavoWithFrees("KU");
+				return {
+					type: "sumti-6-le",
+					start: la.start,
+					end: ku?.end ?? sumtiTail.end,
+					le: la,
+					sumtiTail,
+					ku,
+				};
+			}
+		}
+
 		throw new Unsupported(`Unsupported sumti6 ${token.selmaho}`);
+	}
+
+	public zeroOrMore(selmaho: Selmaho): TokenIndex[] {
+		const result = [];
+		while (this.peekToken()?.selmaho === selmaho) {
+			result.push(this.nextToken()!.index);
+		}
+		return result;
 	}
 
 	private isAhead(selmahos: Selmaho[]): boolean {
@@ -796,17 +898,18 @@ export class Parser {
 	}
 
 	public parseSumtiTail(): SumtiTail {
+		this.begin("sumti-tail");
 		const owner = this.isSumti6Ahead() ? this.parseSumti6() : undefined;
 		const relativeClauses = this.tryParseRelativeClauses();
 		const tail = this.parseSumtiTail1();
-		return {
+		return this.parsed("sumti-tail", {
 			type: "sumti-tail",
 			start: owner?.start ?? tail.start,
 			end: tail.end,
 			owner,
 			relativeClauses,
 			tail,
-		};
+		});
 	}
 
 	public parseSumtiTail1(): SumtiTail1 {
@@ -892,13 +995,14 @@ export class Parser {
 	}
 
 	public parseTag(): Tag {
+		this.begin("tag");
 		const tenseModal = this.parseTenseModal();
-		return {
+		return this.parsed("tag", {
 			type: "tag",
 			start: tenseModal.start,
 			end: tenseModal.end,
 			first: tenseModal,
-		};
+		});
 	}
 
 	public parseTenseModal(): TenseModal {
@@ -1300,7 +1404,7 @@ export class Parser {
 		const frees: Free[] = [];
 		while (true) {
 			const token = this.peekToken();
-			if (token?.selmaho === "UI") {
+			if (token?.selmaho === "UI" || token?.selmaho === "CAI") {
 				frees.push({ type: "free", start: token.index, end: token.index });
 				this.index++;
 			} else {
@@ -1341,15 +1445,37 @@ export class Parser {
 		};
 	}
 
+	private showCtx(): string {
+		return (
+			this.tokens
+				.slice(this.index, this.index + 2)
+				.map((x) => x.lexeme)
+				.join(" ") || "(end of text)"
+		);
+	}
+
+	private showSpan(span: Span): string {
+		return (
+			this.tokens
+				.slice(span.start, span.end + 1)
+				.map((x) => x.lexeme)
+				.join(" ") || "(empty span?)"
+		);
+	}
+
 	public parseSentence(): Sentence {
+		this.begin("sentence");
+		const ctx = this.showCtx();
 		const head: Term<Floating>[] = [];
 		const terbriState: TerbriState = { x: 1, filled: 0n };
 		const headPositions: number[] = [];
 		while (true) {
 			const term = this.tryParseTerm();
 			if (!term) {
+				this.log(`No more terms in head!`);
 				break;
 			}
+			this.log(`Parsed term`, term);
 			head.push(term);
 			if (term.type === "sumti") {
 				headPositions.push(terbriState.x);
@@ -1386,14 +1512,14 @@ export class Parser {
 					}
 				: undefined;
 
-		return {
+		return this.parsed("sentence", {
 			type: "sentence",
 			start: head[0]?.start || bridiTail.start,
 			end: bridiTail.end,
 			cu,
 			bridiTail,
 			terms,
-		};
+		});
 	}
 
 	public parseSubsentence(): Subsentence {
@@ -1525,6 +1651,7 @@ export class Parser {
 		while (true) {
 			const term = this.tryParseTerm();
 			if (!term) break;
+			this.log(`Parsed term "${this.showSpan(term)}" in bridi-tail`, term);
 			if (start === Number.POSITIVE_INFINITY) start = term.start;
 			end = term.end;
 			terms.push(term);
@@ -1541,29 +1668,32 @@ export class Parser {
 	}
 }
 
-export type ParseResult =
+export type ParseResult = (
 	| { success: true; tokens: Token[]; text: Text }
 	| { success: false; error: ParseError }
-	| { success: false; tokens: Token[]; consumed: Text };
+	| { success: false; tokens: Token[]; consumed: Text; remainder: Span }
+) & { snapshots: Snapshot[] };
 
 export function parse(tokens: Token[]): ParseResult {
 	const parser = new Parser(tokens);
 	try {
 		const text = parser.parseText();
-		if (text) {
-			if (parser.index === parser.tokens.length) {
-				return { success: true, tokens, text };
-			} else {
-				// Incomplete parse
-				return { success: false, tokens, consumed: text };
-			}
+		if (parser.index === parser.tokens.length) {
+			return { success: true, tokens, text, snapshots: parser.snapshots };
 		} else {
-			return { success: false, error: new ParseError("Failed to parse bridi") };
+			// Incomplete parse
+			return {
+				success: false,
+				tokens,
+				consumed: text,
+				snapshots: parser.snapshots,
+				remainder: { start: parser.index, end: tokens.length - 1 },
+			};
 		}
 	} catch (error) {
 		console.error(error);
 		if (error instanceof ParseError || error instanceof Unsupported) {
-			return { success: false, error };
+			return { success: false, error, snapshots: parser.snapshots };
 		} else {
 			throw error; // Re-throw unexpected errors
 		}

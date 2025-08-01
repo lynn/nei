@@ -15,6 +15,10 @@
 }
 pre { font-family: "Fira Code", monospace; }
 
+.button {
+	@apply px-2 py-1 bg-blue-500 text-white cursor-pointer rounded
+}
+
 html,
 body,
 #app {

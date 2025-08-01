@@ -44,8 +44,26 @@ export function ShowSpan({ span }: { span: G.Span }) {
 	);
 }
 
-export function TextBox({ text }: { text: G.Text }) {
-	return <Text1Box text1={text.text1} />;
+export function TextBox({
+	text,
+	remainder,
+}: {
+	text: G.Text;
+	remainder?: G.Span;
+}) {
+	return (
+		<div className="row">
+			{text.free.map((x) => (
+				<ShowSpan span={x} />
+			))}
+			<Text1Box text1={text.text1} />
+			{remainder && (
+				<div className="bg-red-200 px-2">
+					<ShowSpan span={remainder} />
+				</div>
+			)}
+		</div>
+	);
 }
 
 export function Text1Box({ text1 }: { text1: G.Text1 }) {
@@ -82,7 +100,7 @@ export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 						end: paragraph.end,
 					}}
 				/>
-				{paragraph.rest.map((item, index) => (
+				{paragraph.rest.map((item) => (
 					<ItemBox item={item} />
 				))}
 			</div>
