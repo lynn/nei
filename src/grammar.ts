@@ -13,8 +13,7 @@ export type Floating = undefined;
 
 /** For example Sumti<Positional> has positional role info */
 export interface Positional {
-	xIndex: number;
-	verbs: Span[]; // shared
+	roles: { xIndex: number; verb: Span }[];
 }
 
 /// text =
@@ -147,7 +146,6 @@ export interface Subsentence extends Span {
 export interface BridiTail<Role> extends Span {
 	type: "bridi-tail";
 	first: BridiTail1<Role>;
-	tertaus: Span[];
 	// TODO: [gihek [stag] KE # bridi-tail /KEhE#/ tail-terms]
 }
 
@@ -156,8 +154,15 @@ export interface BridiTail<Role> extends Span {
 export interface BridiTail1<Role> extends Span {
 	type: "bridi-tail-1";
 	first: BridiTail2<Role>;
-	tertaus: Span[];
-	// TODO: [gihek # bridi-tail-2 tail-terms] ...
+	rest: GihekTail<Role>[];
+}
+
+export interface GihekTail<Role> extends Span {
+	type: "gihek-tail-1";
+	gihek: Gihek;
+	frees: Free[];
+	tail: BridiTail2<Role>;
+	tailTerms: TailTerms<Role>;
 }
 
 /// bridi-tail-2 = bridi-tail-3 [gihek [stag] BO # bridi-tail-2 tail-terms]
@@ -165,7 +170,6 @@ export interface BridiTail1<Role> extends Span {
 export interface BridiTail2<Role> extends Span {
 	type: "bridi-tail-2";
 	first: BridiTail3<Role>;
-	tertaus: Span[];
 	// TODO: [gihek [stag] BO # bridi-tail-2 tail-terms]
 }
 
@@ -175,7 +179,6 @@ export interface BridiTail2<Role> extends Span {
 export interface BridiTail3<Role> extends Span {
 	type: "bridi-tail-3";
 	selbri: Selbri;
-	tertau: Span;
 	tailTerms: TailTerms<Role>;
 	// TODO: | gek-sentence
 }
@@ -377,6 +380,7 @@ export interface RelativeClauses extends Span {
 
 export interface RelativeClause extends Span {
 	type: "relative-clause";
+	antecedent: Span | undefined;
 	noi: CmavoWithFrees;
 	subsentence: Subsentence;
 	kuho: CmavoWithFrees | undefined;

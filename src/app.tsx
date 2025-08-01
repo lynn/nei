@@ -55,6 +55,13 @@ export function ShowSnapshots({
 				>
 					Forward
 				</button>
+				<button
+					className="button"
+					type="button"
+					onClick={() => setI(Math.min(i + 10, snapshots.length - 1))}
+				>
+					+10
+				</button>
 			</div>
 			<div className="flex flex-row font-mono">
 				{tokens.map((token) => (
@@ -134,7 +141,7 @@ export function App() {
 					class="border border-gray-300 rounded p-2 w-full"
 					autofocus
 					type="text"
-					value="ni'o la .alis. co'a tatpi lo nu zutse lo rirxe korbi re'o lo mensi gi'e zukte fi no da"
+					value=".i ji'a ma prali fi lo cukta poi vasru no lo pixra"
 					onKeyPress={(e) => {
 						if (e.key === "Enter") {
 							const input = e.currentTarget.value;

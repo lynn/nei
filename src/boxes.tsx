@@ -34,7 +34,8 @@ export function ShowTokens({ start, end }: { start: number; end: number }) {
 	);
 }
 
-export function ShowSpan({ span }: { span: G.Span }) {
+export function ShowSpan({ span }: { span: G.Span | undefined }) {
+	if (!span) return undefined;
 	if (span.start <= span.end)
 		return <ShowTokens start={span.start} end={span.end} />;
 	return (
@@ -146,6 +147,29 @@ export function Statement3Box({ statement3 }: { statement3: G.Statement3 }) {
 	return <SentenceBox sentence={statement3.sentence} />;
 }
 
+export function SubsentenceBox({
+	subsentence,
+}: {
+	subsentence: G.Subsentence;
+}) {
+	return (
+		<div className="row">
+			{subsentence.prenexes.map((p) => (
+				<PrenexBox prenex={p} />
+			))}
+			<SentenceBox sentence={subsentence.sentence} />
+		</div>
+	);
+}
+
+export function PrenexBox({ prenex }: { prenex: G.Prenex }) {
+	return (
+		<div className="row">
+			<TermsBox terms={prenex.terms} />
+		</div>
+	);
+}
+
 export function SentenceBox({ sentence }: { sentence: G.Sentence }) {
 	return (
 		<div className="row">
@@ -171,7 +195,37 @@ export function BridiTail1Box({
 }: {
 	bridiTail1: G.BridiTail1<G.Positional>;
 }) {
-	return <BridiTail2Box bridiTail2={bridiTail1.first} />;
+	const row = (
+		<div className="row">
+			<BridiTail2Box bridiTail2={bridiTail1.first} />
+			{bridiTail1.rest.map((x) => (
+				<GihekTailBox gihekTail={x} />
+			))}
+		</div>
+	);
+	return bridiTail1.rest.length ? (
+		<div className="box outline-dotted col">
+			<b>complex bridi tail</b>
+			{row}
+		</div>
+	) : (
+		row
+	);
+}
+
+export function GihekTailBox({
+	gihekTail,
+}: {
+	gihekTail: G.GihekTail<G.Positional>;
+}) {
+	return (
+		<div className="row">
+			<ShowSpan span={gihekTail.gihek} />
+			<FreesBox frees={gihekTail.frees} />
+			<BridiTail2Box bridiTail2={gihekTail.tail} />
+			<TailTermsBox tailTerms={gihekTail.tailTerms} />
+		</div>
+	);
 }
 
 export function BridiTail2Box({
@@ -199,7 +253,90 @@ export function SelbriBox({ selbri }: { selbri: G.Selbri }) {
 	return (
 		<div className="box col bg-blue-100">
 			<b>selbri</b>
-			<ShowTokens start={selbri.start} end={selbri.end} />
+			<SelbriInnerBox selbri={selbri} />
+		</div>
+	);
+}
+
+export function SelbriInnerBox({ selbri }: { selbri: G.Selbri }) {
+	return (
+		<div className="row">
+			{selbri.tag && <TagBox tag={selbri.tag} />}
+			<Selbri1Box selbri1={selbri.selbri1} />
+		</div>
+	);
+}
+
+export function TagBox({ tag }: { tag: G.Tag | G.CmavoWithFrees }) {
+	return <ShowSpan span={tag} />;
+}
+
+export function Selbri1Box({ selbri1 }: { selbri1: G.Selbri1 }) {
+	return selbri1.type === "selbri-1-na" ? (
+		<div class="row">
+			<ShowSpan span={selbri1.na} />
+			<SelbriInnerBox selbri={selbri1.selbri} />
+		</div>
+	) : (
+		<Selbri2Box selbri2={selbri1.selbri2} />
+	);
+}
+
+export function Selbri2Box({ selbri2 }: { selbri2: G.Selbri2 }) {
+	return (
+		<div class="row">
+			<Selbri3Box selbri3={selbri2.selbri3} />
+			<ShowSpan span={selbri2.co} />
+			{selbri2.coSelbri && <Selbri2Box selbri2={selbri2.coSelbri} />}
+		</div>
+	);
+}
+
+export function Selbri3Box({ selbri3 }: { selbri3: G.Selbri3 }) {
+	const tanru = selbri3.selbri4s;
+	return (
+		<div class="row">
+			{tanru.map((t) => (
+				<Selbri4Box selbri4={t} />
+			))}
+		</div>
+	);
+}
+
+export function Selbri4Box({ selbri4 }: { selbri4: G.Selbri4 }) {
+	return <Selbri5Box selbri5={selbri4.first} />;
+}
+
+export function Selbri5Box({ selbri5 }: { selbri5: G.Selbri5 }) {
+	return <Selbri6Box selbri6={selbri5.first} />;
+}
+
+export function Selbri6Box({ selbri6 }: { selbri6: G.Selbri6 }) {
+	return <TanruUnitBox unit={selbri6.tanruUnit} />;
+}
+
+export function TanruUnitBox({ unit }: { unit: G.TanruUnit }) {
+	return <TanruUnit1Box unit={unit.tanruUnit1} />;
+}
+
+export function TanruUnit1Box({ unit }: { unit: G.TanruUnit1 }) {
+	return <TanruUnit2Box unit={unit.tanruUnit2} />;
+}
+
+export function TanruUnit2Box({ unit }: { unit: G.TanruUnit2 }) {
+	return unit.type === "tu-nu" ? (
+		<TuNuBox unit={unit} />
+	) : (
+		<ShowSpan span={unit} />
+	);
+}
+
+export function TuNuBox({ unit }: { unit: G.TuNu }) {
+	return (
+		<div class="row">
+			<ShowSpan span={unit.nu} />
+			<SubsentenceBox subsentence={unit.subsentence} />
+			<ShowSpan span={unit.kei} />
 		</div>
 	);
 }
@@ -210,23 +347,24 @@ export function TailTermsBox({
 	tailTerms: G.TailTerms<G.Positional>;
 }) {
 	return (
-		<div className="row">
-			{tailTerms.terms && <TermsBox terms={tailTerms.terms} />}
-			{tailTerms.vau && (
-				<ShowTokens start={tailTerms.vau.start} end={tailTerms.vau.end} />
-			)}
-		</div>
+		((tailTerms.terms?.terms?.length ?? 0) > 0 ||
+			tailTerms.vau !== undefined) && (
+			<div className="row">
+				{tailTerms.terms && <TermsBox terms={tailTerms.terms} />}
+				{tailTerms.vau && (
+					<ShowTokens start={tailTerms.vau.start} end={tailTerms.vau.end} />
+				)}
+			</div>
+		)
 	);
 }
 
 export function CmavoWithFreesBox({ cmavo }: { cmavo: G.CmavoWithFrees }) {
 	return (
 		<div className="box col bg-green-100">
-			<b>cmavo</b>
 			<ShowTokens start={cmavo.start} end={cmavo.end} />
 			{cmavo.frees && (
 				<div className="frees">
-					<b>frees:</b>{" "}
 					{cmavo.frees.map((free, index) => (
 						<span className="free" key={index}>
 							<ShowTokens start={free.start} end={free.end} />
@@ -238,7 +376,23 @@ export function CmavoWithFreesBox({ cmavo }: { cmavo: G.CmavoWithFrees }) {
 	);
 }
 
-export function TermsBox({ terms }: { terms: G.Terms<G.Positional> }) {
+export function FreesBox({ frees }: { frees: G.Free[] }) {
+	return (
+		<>
+			{frees.map((free, index) => (
+				<span className="free" key={index}>
+					<ShowTokens start={free.start} end={free.end} />
+				</span>
+			))}
+		</>
+	);
+}
+
+export function TermsBox({
+	terms,
+}: {
+	terms: G.Terms<G.Positional> | G.Terms<G.Floating>;
+}) {
 	return (
 		<div className="row">
 			{terms.terms.map((term, index) => (
@@ -256,22 +410,20 @@ export function TermBox({
 	return term.type === "sumti" ? (
 		<SumtiBox sumti={term} />
 	) : term.type === "naku" ? (
-		<NakuBox term={term} />
+		<LabelBox label="clause neg." span={term} />
 	) : (
-		<TaggedBox term={term} />
+		<TaggedBox span={term} />
 	);
 }
 
 export function ExplainRoleIn({
 	role,
-	verb,
 }: {
-	role: G.Positional;
-	verb: G.Span;
+	role: { xIndex: number; verb: G.Span };
 }) {
 	const tokens = useContext(TokenContext);
 	const lexemes = tokens
-		.slice(verb.start, verb.end + 1)
+		.slice(role.verb.start, role.verb.end + 1)
 		.map((token) => token.lexeme);
 
 	// unwrap SE
@@ -307,10 +459,29 @@ export function ExplainRoleIn({
 export function ExplainRole({ role }: { role: G.Positional }) {
 	return (
 		<b className="flex flex-col">
-			{role.verbs.map((verb) => (
-				<ExplainRoleIn role={role} verb={verb} />
+			{role.roles.map((role) => (
+				<ExplainRoleIn role={role} />
 			))}
 		</b>
+	);
+}
+
+export function LabelBox({
+	label,
+	span,
+}: {
+	label: string;
+	span: G.Span | undefined;
+}) {
+	return (
+		span && (
+			<div className="box col bg-white">
+				<b>{label}</b>
+				<div className="row">
+					<ShowTokens start={span.start} end={span.end} />
+				</div>
+			</div>
+		)
 	);
 }
 
@@ -321,31 +492,132 @@ export function SumtiBox({
 }) {
 	return (
 		<div className="box col bg-amber-100">
-			{sumti.role ? <ExplainRole role={sumti.role} /> : <b>noun</b>}
+			{sumti.role ? <ExplainRole role={sumti.role} /> : <b>sumti</b>}
 			<div className="row">
-				<ShowTokens start={sumti.start} end={sumti.end} />
+				<Sumti1Box span={sumti.sumti1} />
+				<LabelBox label="complex relator" span={sumti.vuho} />
+				{sumti.relativeClauses && (
+					<RelativeClausesBox span={sumti.relativeClauses} />
+				)}
 			</div>
 		</div>
 	);
 }
 
-export function NakuBox({ term }: { term: G.Naku }) {
+export function Sumti1Box({ span }: { span: G.Sumti1 }) {
+	return <Sumti2Box span={span.sumti2} />;
+}
+
+export function Sumti2Box({ span }: { span: G.Sumti2 }) {
+	return <Sumti3Box span={span.sumti3} />;
+}
+
+export function Sumti3Box({ span }: { span: G.Sumti3 }) {
+	return <Sumti4Box span={span.sumti4} />;
+}
+
+export function Sumti4Box({ span }: { span: G.Sumti4 }) {
+	return <Sumti5Box span={span.sumti5} />;
+}
+
+export function Sumti5Box({ span }: { span: G.Sumti5 }) {
+	return span.type === "sumti-5-large" ? (
+		<Sumti5LargeBox span={span} />
+	) : (
+		<Sumti5SmallBox span={span} />
+	);
+}
+
+export function Sumti5SmallBox({ span }: { span: G.Sumti5Small }) {
+	return <ShowSpan span={span} />;
+}
+
+export function Sumti5LargeBox({ span }: { span: G.Sumti5Large }) {
 	return (
-		<div className="box col">
-			<b>clause neg.</b>
+		<div className="row">
+			{span.outerQuantifier && <ShowSpan span={span.outerQuantifier} />}
+			<Sumti6Box span={span.sumti6} />
+			{span.relativeClauses && (
+				<RelativeClausesBox span={span.relativeClauses} />
+			)}
+		</div>
+	);
+}
+
+export function Sumti6Box({ span }: { span: G.Sumti6 }) {
+	return span.type === "sumti-6-le" ? (
+		<Sumti6LeBox span={span} />
+	) : (
+		<ShowSpan span={span} />
+	);
+}
+
+export function Sumti6LeBox({ span }: { span: G.Sumti6Le }) {
+	return (
+		<div className="row">
+			<ShowSpan span={span.le} />
+			<SumtiTailBox span={span.sumtiTail} />
+			<ShowSpan span={span.ku} />
+		</div>
+	);
+}
+
+export function SumtiTailBox({ span }: { span: G.SumtiTail }) {
+	return (
+		<div className="row">
+			{span.owner && <Sumti6Box span={span.owner} />}
+			{span.relativeClauses && (
+				<RelativeClausesBox span={span.relativeClauses} />
+			)}
+			<SumtiTail1Box span={span.tail} />
+		</div>
+	);
+}
+
+export function SumtiTail1Box({ span }: { span: G.SumtiTail1 }) {
+	return (
+		<div className="row">
+			{span.selbri && <SelbriBox selbri={span.selbri} />}
+			{span.relativeClauses && (
+				<RelativeClausesBox span={span.relativeClauses} />
+			)}
+		</div>
+	);
+}
+
+export function RelativeClausesBox({ span }: { span: G.RelativeClauses }) {
+	return (
+		<div className="row">
+			<RelativeClauseBox span={span.first} />
+		</div>
+	);
+}
+
+export function RelativeClauseBox({ span }: { span: G.RelativeClause }) {
+	return (
+		<div className="box col bg-white">
+			<b>relative clause</b>
 			<div className="row">
-				<ShowTokens start={term.start} end={term.end} />
+				<ShowSpan span={span.noi} />
+				<SubsentenceBox subsentence={span.subsentence} />
+				<ShowSpan span={span.kuho} />
 			</div>
 		</div>
 	);
 }
 
-export function TaggedBox({ term }: { term: G.Tagged }) {
+export function TaggedBox({ span }: { span: G.Tagged }) {
 	return (
 		<div className="box col bg-purple-100">
 			<b>tagged</b>
 			<div className="row">
-				<ShowTokens start={term.start} end={term.end} />
+				<TagBox tag={span.tagOrFa} />
+				{span.sumtiOrKu &&
+					(span.sumtiOrKu.type === "sumti" ? (
+						<SumtiBox sumti={span.sumtiOrKu} />
+					) : (
+						<ShowTokens start={span.sumtiOrKu.start} end={span.sumtiOrKu.end} />
+					))}
 			</div>
 		</div>
 	);
