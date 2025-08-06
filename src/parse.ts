@@ -994,7 +994,7 @@ export class Parser extends BaseParser {
 			this.isAhead(["NAhE", "BO"]) ||
 			this.isAhead(["KOhA"]) ||
 			this.isAhead(["BY"]) ||
-			this.isAhead(["BU"]) || // TODO: actually handle word+bu...
+			// this.isAhead(["BU"]) || // eliminated by tokenizer
 			this.isAhead(["LA"]) ||
 			this.isAhead(["LE"]) ||
 			this.isAhead(["LI"]) ||

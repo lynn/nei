@@ -682,7 +682,7 @@ export interface LerfuString extends Span {
 export interface LerfuWord extends Span {
 	type: "lerfu-word";
 	by: TokenIndex;
-	// TODO: bu, lau, tei, foi
+	// TODO: lau, tei, foi
 }
 
 /// ek = [NA] [SE] A [NAI]

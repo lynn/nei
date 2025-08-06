@@ -50,6 +50,7 @@ export class Tokenizer {
 	private tokens: Token[] = [];
 	private erased: string[] = [];
 	private lastZo: boolean = false;
+	private lastBahe: boolean = false;
 	private lohuSource: string[] | undefined = undefined;
 
 	private push(
@@ -93,7 +94,27 @@ export class Tokenizer {
 				...this.erased,
 				sourceText,
 			];
+		} else if (lexeme === "bu") {
+			const last = this.tokens.pop();
+			if (!last) throw new Error("impossible");
+
+			this.tokens.push({
+				index: this.tokens.length,
+				line: this.lineIndex,
+				column: [last.column[0], column[1]],
+				erased: [...this.erased],
+				sourceText: `${last.sourceText} ${sourceText}`,
+				lexeme: `${last.lexeme} ${lexeme}`,
+				selmaho: "BY",
+			});
 		} else {
+			if (this.lastBahe) {
+				const last = this.tokens.pop();
+				if (!last) throw new Error("impossible");
+				lexeme = `${last.lexeme} ${lexeme}`;
+				sourceText = `${last.sourceText} ${sourceText}`;
+				this.lastBahe = false;
+			}
 			this.tokens.push({
 				index: this.tokens.length,
 				line: this.lineIndex,
@@ -104,6 +125,7 @@ export class Tokenizer {
 				selmaho,
 			});
 			this.lastZo = lexeme === "zo";
+			this.lastBahe = lexeme === "ba'e";
 			this.erased = [];
 		}
 	}
