@@ -61,9 +61,7 @@ export function TextBox({
 }) {
 	return (
 		<div className="row">
-			{text.free.map((x) => (
-				<ShowSpan span={x} />
-			))}
+			{text.pretext && <PretextBox pretext={text.pretext} />}
 			<Text1Box text1={text.text1} />
 			{remainder && (
 				<div className="bg-red-200 px-2">
@@ -74,12 +72,21 @@ export function TextBox({
 	);
 }
 
+export function PretextBox({ pretext }: { pretext: G.Pretext }) {
+	return (
+		<div className="box col outline-dotted">
+			<b>pre-text</b>
+			<ShowTokens start={pretext.start} end={pretext.end} />
+		</div>
+	);
+}
+
 export function Text1Box({ text1 }: { text1: G.Text1 }) {
 	return (
 		<div className="row">
 			{text1.firstSeparator && (
 				<div className="box col bg-green-100">
-					<b>separator</b>
+					<b>initial separator</b>
 					<ShowSpan span={text1.firstSeparator} />
 				</div>
 			)}
@@ -92,6 +99,7 @@ export function Text1Box({ text1 }: { text1: G.Text1 }) {
 export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 	return (
 		<div className="box col bg-gray-200 outline-none">
+			<b>paragraph</b>
 			<div className="row">
 				{paragraph.niho && (
 					<div className="box col bg-green-100">
@@ -118,7 +126,7 @@ export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 
 export function ItemBox({ item }: { item: G.Item }) {
 	return (
-		<div className="row box bg-white outline-none">
+		<div className="row box bg-gray-50 outline-none">
 			{item.i && (
 				<div className="box col bg-green-100">
 					<b>separator</b>
@@ -497,7 +505,7 @@ export function LabelBox({
 }) {
 	return (
 		span && (
-			<div className="box col bg-white">
+			<div className="box col bg-gray-50">
 				<b>{label}</b>
 				<div className="row">
 					<ShowTokens start={span.start} end={span.end} />
@@ -625,7 +633,7 @@ export function RelativeClausesBox({ span }: { span: G.RelativeClauses }) {
 
 export function RelativeClauseBox({ span }: { span: G.RelativeClause }) {
 	return (
-		<div className="box col bg-white">
+		<div className="box col bg-gray-50">
 			<b>
 				relative clause{" "}
 				{span.antecedent && (

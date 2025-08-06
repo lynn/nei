@@ -21,9 +21,16 @@ export interface Positional {
 
 export interface Text extends Span {
 	type: "text";
-	// TODO: [NAI ...] [CMENE ... # | (indicators & free ...)] [joik-jek]
-	free: Free[];
+	pretext: Pretext | undefined;
 	text1: Text1;
+}
+
+export interface Pretext extends Span {
+	type: "pretext";
+	nais: TokenIndex[];
+	cmevlas: TokenIndex[];
+	joikjek: JoikJek | undefined;
+	frees: Free[];
 }
 
 /// text-1 =
@@ -643,16 +650,16 @@ export interface Jek extends Span {
 }
 
 /// joik = [SE] JOI [NAI] | interval | GAhO interval GAhO
+/// interval = [SE] BIhI [NAI]
 
 export interface Joik extends Span {
 	type: "joik";
-	na: TokenIndex | undefined;
+	gaho1: TokenIndex | undefined;
 	se: TokenIndex | undefined;
-	joi: TokenIndex;
+	joi: TokenIndex; // JOI or BIhI
 	nai: TokenIndex | undefined;
+	gaho2: TokenIndex | undefined;
 }
-
-/// interval = [SE] BIhI [NAI]
 
 /// joik-ek = joik # | ek #
 

@@ -2,6 +2,9 @@ import { ParseError } from "./error";
 import type {
 	CmavoWithFrees,
 	Free,
+	Jek,
+	Joik,
+	JoikJek,
 	LerfuString,
 	LerfuWord,
 	Namcu,
@@ -81,6 +84,16 @@ export class BaseParser {
 		if (this.peekToken()?.selmaho === selmaho) {
 			return this.index++;
 		}
+	}
+
+	protected parseCmavos(selmaho: Selmaho): TokenIndex[] {
+		const cmavos = [];
+		while (true) {
+			const next = this.tryParseCmavo(selmaho);
+			if (next === undefined) break;
+			cmavos.push(next);
+		}
+		return cmavos;
 	}
 
 	protected tryParseCmavoWithFrees(
@@ -174,6 +187,71 @@ export class BaseParser {
 			end: rest.length ? rest[rest.length - 1].end : first.end,
 			first,
 			rest,
+		};
+	}
+
+	protected tryParseJoikJek(): JoikJek | undefined {
+		const jk = this.tryParseJoik() ?? this.tryParseJek();
+		if (!jk) return undefined;
+		const frees = this.parseFrees();
+		return {
+			type: "joik-jek",
+			jk,
+			frees,
+			start: jk.start,
+			end: frees.length ? frees[frees.length - 1].end : jk.end,
+		};
+	}
+
+	protected tryParseJoik(): Joik | undefined {
+		const backtrack = this.index;
+		const gaho1 = this.tryParseCmavo("GAhO");
+		const se = this.tryParseCmavo("SE");
+		const token = this.nextToken();
+		if (!token || (token.selmaho !== "JOI" && token.selmaho !== "BIhI")) {
+			this.index = backtrack;
+			return undefined;
+		}
+		const nai = this.tryParseCmavo("NAI");
+		const gaho2 = this.tryParseCmavo("GAhO");
+		if (
+			token.selmaho === "JOI" &&
+			(gaho1 !== undefined || gaho2 !== undefined)
+		) {
+			this.index = backtrack;
+			return undefined;
+		}
+		return {
+			type: "joik",
+			gaho1,
+			se,
+			joi: token.index,
+			nai,
+			gaho2,
+			start: gaho1 ?? se ?? token?.index,
+			end: gaho2 ?? nai ?? token?.index,
+		};
+	}
+
+	protected tryParseJek(): Jek | undefined {
+		const backtrack = this.index;
+		const na = this.tryParseCmavo("NA");
+		const se = this.tryParseCmavo("SE");
+		const ja = this.tryParseCmavo("JA");
+		if (ja === undefined) {
+			this.index = backtrack;
+			return undefined;
+		}
+		const nai = this.tryParseCmavo("NAI");
+
+		return {
+			type: "jek",
+			na,
+			se,
+			ja,
+			nai,
+			start: na ?? se ?? ja,
+			end: nai ?? ja,
 		};
 	}
 }

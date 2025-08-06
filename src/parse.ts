@@ -15,11 +15,13 @@ import type {
 	Ijek,
 	IjekStatement2,
 	Item,
+	JoikJek,
 	Linkargs,
 	Naku,
 	Nihos,
 	Paragraph,
 	Positional,
+	Pretext,
 	Quantifier,
 	RelativeClause,
 	RelativeClauses,
@@ -88,15 +90,46 @@ export interface Tertau {
 export class Parser extends BaseParser {
 	public parseText(): Text {
 		this.begin("text");
-		const frees = this.parseFrees();
+		const pretext = this.tryParsePretext();
 		const text1 = this.parseText1();
 		return this.parsed("text", {
 			type: "text",
-			free: frees,
-			start: frees.length ? frees[0].start : text1.start,
+			start: pretext?.start ?? text1.start,
 			end: text1.end,
+			pretext: pretext,
 			text1,
 		});
+	}
+
+	private tryParsePretext(): Pretext | undefined {
+		this.begin("pretext");
+		const nais = this.parseCmavos("NAI");
+		const cmevlas = this.parseCmavos("CMEVLA");
+		const frees = this.parseFrees();
+		const joikjek = this.tryParseJoikJek();
+		if (
+			nais.length === 0 &&
+			cmevlas.length === 0 &&
+			frees.length === 0 &&
+			joikjek === undefined
+		) {
+			return undefined;
+		}
+		return {
+			type: "pretext",
+			start: nais.length
+				? nais[0]
+				: cmevlas.length
+					? cmevlas[0]
+					: frees.length
+						? frees[0].start
+						: (joikjek?.start ?? 0),
+			end: (joikjek?.end ?? frees.length) ? frees[frees.length - 1].end : 0,
+			nais,
+			cmevlas,
+			frees,
+			joikjek,
+		};
 	}
 
 	private parseText1(): Text1 {
@@ -119,18 +152,12 @@ export class Parser extends BaseParser {
 	}
 
 	private tryParseNihos(): Nihos | undefined {
-		const first = this.tryParseCmavo("NIhO");
-		if (first === undefined) return undefined;
-		const nihos = [first];
-		while (true) {
-			const next = this.tryParseCmavo("NIhO");
-			if (next === undefined) break;
-			nihos.push(next);
-		}
+		const nihos = this.parseCmavos("NIhO");
+		if (nihos.length === 0) return undefined;
 		const frees = this.parseFrees();
 		return {
 			type: "nihos",
-			start: first,
+			start: nihos[0],
 			end: frees.length ? frees[frees.length - 1].end : nihos[nihos.length - 1],
 			nihos,
 			frees,
