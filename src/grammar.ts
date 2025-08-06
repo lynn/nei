@@ -450,7 +450,14 @@ export interface Selbri3 extends Span {
 export interface Selbri4 extends Span {
 	type: "selbri-4";
 	first: Selbri5;
-	// TODO: joik-jek
+	rest: JoiSelbri[];
+}
+
+export interface JoiSelbri extends Span {
+	type: "joi-selbri";
+	jk: JoikJek;
+	selbri5: Selbri5;
+	// The joik [stag] stuff is weird, might not implement it
 }
 
 /// selbri-5 =

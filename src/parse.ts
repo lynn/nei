@@ -13,8 +13,10 @@ import type {
 	Gihek,
 	GihekTail,
 	Ibo,
+	IboStatement2,
 	IjekStatement2,
 	Item,
+	JoiSelbri,
 	Linkargs,
 	Naku,
 	Nihos,
@@ -264,12 +266,25 @@ export class Parser extends BaseParser {
 
 	private parseStatement2(): Statement2 {
 		const first = this.parseStatement3();
+		const rest: IboStatement2[] = [];
+		while (true) {
+			const ibo = this.tryParseIbo();
+			if (!ibo) break;
+			const statement2 = this.parseStatement2();
+			rest.push({
+				type: "ibo-statement-2",
+				start: ibo.start,
+				end: statement2.end,
+				ibo,
+				statement2,
+			});
+		}
 		return {
 			type: "statement-2",
 			start: first.start,
-			end: first.end,
+			end: rest.length > 0 ? rest[rest.length - 1].end : first.end,
 			first,
-			rest: [], // TODO
+			rest,
 		};
 	}
 
@@ -366,11 +381,25 @@ export class Parser extends BaseParser {
 
 	private parseSelbri4(): Selbri4 {
 		const selbri5 = this.parseSelbri5();
+		const rest: JoiSelbri[] = [];
+		while (true) {
+			const jk = this.tryParseJoikJek();
+			if (!jk) break;
+			const selbri5 = this.parseSelbri5();
+			rest.push({
+				type: "joi-selbri",
+				start: jk.start,
+				end: selbri5.end,
+				jk,
+				selbri5,
+			});
+		}
 		return {
 			type: "selbri-4",
 			start: selbri5.start,
 			end: selbri5.end,
 			first: selbri5,
+			rest,
 		};
 	}
 
