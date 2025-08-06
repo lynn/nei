@@ -2,6 +2,7 @@ import { ParseError } from "./error";
 import type {
 	CmavoWithFrees,
 	Free,
+	Ijek,
 	Jek,
 	Joik,
 	JoikJek,
@@ -252,6 +253,24 @@ export class BaseParser {
 			nai,
 			start: na ?? se ?? ja,
 			end: nai ?? ja,
+		};
+	}
+
+	protected tryParseIjek(): Ijek | undefined {
+		const backtrack = this.index;
+		const i = this.tryParseCmavo("I");
+		if (i === undefined) return undefined;
+		const jek = this.tryParseJoikJek();
+		if (jek === undefined) {
+			this.index = backtrack;
+			return undefined;
+		}
+		return {
+			type: "ijek",
+			i,
+			jek,
+			start: i,
+			end: jek.end,
 		};
 	}
 }

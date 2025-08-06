@@ -38,9 +38,7 @@ export interface Pretext extends Span {
 
 export interface Text1 extends Span {
 	type: "text-1";
-	// TODO: [(I [jek | joik] [[stag] BO] #) ... | NIhO ... #]
-	// for now just [I #] or [NIhO #]:
-	firstSeparator: Nihos | CmavoWithFrees | undefined;
+	firstSeparator: Ijek | Ibo | Nihos | CmavoWithFrees | undefined;
 	paragraphs: Paragraph[];
 }
 
@@ -85,7 +83,7 @@ export interface Statement1 extends Span {
 export interface Ijek extends Span {
 	type: "ijek";
 	i: TokenIndex;
-	jek: CmavoWithFrees;
+	jek: JoikJek;
 }
 
 export interface IjekStatement2 extends Span {
@@ -99,7 +97,21 @@ export interface IjekStatement2 extends Span {
 export interface Statement2 extends Span {
 	type: "statement-2";
 	first: Statement3;
-	// TODO: [I [jek | joik] [stag] BO # [statement-2]]
+	rest: IboStatement2[];
+}
+
+export interface Ibo extends Span {
+	type: "ibo";
+	i: TokenIndex;
+	jk: Joik | Jek | undefined;
+	stag: Stag | undefined;
+	bo: CmavoWithFrees;
+}
+
+export interface IboStatement2 extends Span {
+	type: "ibo-statement-2";
+	ibo: Ibo;
+	statement2: Statement2;
 }
 
 /// statement-3 = sentence | [tag] TUhE # text-1 /TUhU#/

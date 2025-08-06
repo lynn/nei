@@ -12,10 +12,9 @@ import type {
 	Fragment,
 	Gihek,
 	GihekTail,
-	Ijek,
+	Ibo,
 	IjekStatement2,
 	Item,
-	JoikJek,
 	Linkargs,
 	Naku,
 	Nihos,
@@ -133,7 +132,11 @@ export class Parser extends BaseParser {
 	}
 
 	private parseText1(): Text1 {
-		const i = this.tryParseCmavoWithFrees("I") ?? this.tryParseNihos();
+		const i =
+			this.tryParseIjek() ??
+			this.tryParseIbo() ??
+			this.tryParseNihos() ??
+			this.tryParseCmavoWithFrees("I");
 		const first = this.parseParagraph();
 		const paragraphs = [first];
 		let end = first.end;
@@ -148,6 +151,28 @@ export class Parser extends BaseParser {
 			end,
 			firstSeparator: i,
 			paragraphs,
+		};
+	}
+
+	protected tryParseIbo(): Ibo | undefined {
+		const backtrack = this.index;
+		const i = this.tryParseCmavo("I");
+		if (i === undefined) return undefined;
+		const jk = this.tryParseJoik() ?? this.tryParseJek();
+		const stag = undefined; // TODO: this.tryParseStag();
+		const bo = this.tryParseCmavoWithFrees("BO");
+		if (bo === undefined) {
+			this.index = backtrack;
+			return undefined;
+		}
+		return {
+			type: "ibo",
+			start: i,
+			end: bo.end,
+			i,
+			jk,
+			stag,
+			bo,
 		};
 	}
 
@@ -213,32 +238,6 @@ export class Parser extends BaseParser {
 		});
 	}
 
-	private tryParseIjek(): Ijek | undefined {
-		const i = this.tokens[this.index];
-		const jek = this.tokens[this.index + 1];
-		if (
-			i &&
-			jek &&
-			i.selmaho === "I" &&
-			(jek.selmaho === "JOI" || jek.selmaho === "JA")
-		) {
-			this.index += 2;
-			return {
-				type: "ijek",
-				start: i.index,
-				end: jek.index,
-				i: i.index,
-				jek: {
-					type: "cmavo-with-frees",
-					start: jek.index,
-					end: jek.index,
-					cmavo: jek.index,
-					frees: this.parseFrees(),
-				},
-			};
-		}
-	}
-
 	private parseStatement1(): Statement1 {
 		const first = this.parseStatement2();
 		const rest: IjekStatement2[] = [];
@@ -270,6 +269,7 @@ export class Parser extends BaseParser {
 			start: first.start,
 			end: first.end,
 			first,
+			rest: [], // TODO
 		};
 	}
 
