@@ -325,15 +325,55 @@ export function Selbri3Box({ selbri3 }: { selbri3: G.Selbri3 }) {
 }
 
 export function Selbri4Box({ selbri4 }: { selbri4: G.Selbri4 }) {
-	return <Selbri5Box selbri5={selbri4.first} />;
+	return (
+		<div class="row">
+			<Selbri5Box selbri5={selbri4.first} />
+			{selbri4.rest.map((r) => (
+				<div class="row">
+					<ShowSpan span={r.jk} />
+					<Selbri5Box selbri5={r.selbri5} />
+				</div>
+			))}
+		</div>
+	);
 }
 
 export function Selbri5Box({ selbri5 }: { selbri5: G.Selbri5 }) {
-	return <Selbri6Box selbri6={selbri5.first} />;
+	return (
+		<div class="row">
+			<Selbri6Box selbri6={selbri5.first} />
+			{selbri5.rest && (
+				<div class="row">
+					<ShowSpan span={selbri5.rest.jk} />
+					<ShowSpan span={selbri5.rest.stag} />
+					<ShowSpan span={selbri5.rest.bo} />
+					<Selbri5Box selbri5={selbri5.rest.selbri5} />
+				</div>
+			)}
+		</div>
+	);
 }
 
 export function Selbri6Box({ selbri6 }: { selbri6: G.Selbri6 }) {
-	return <TanruUnitBox unit={selbri6.tanruUnit} />;
+	return selbri6.type === "selbri-6-plain" ? (
+		<div class="row">
+			<TanruUnitBox unit={selbri6.tanruUnit} />
+			{selbri6.rest && (
+				<>
+					<ShowSpan span={selbri6.rest.bo} />
+					<Selbri6Box selbri6={selbri6.rest.selbri6} />
+				</>
+			)}
+		</div>
+	) : (
+		<div class="row">
+			<ShowSpan span={selbri6.nahe} />
+			<ShowSpan span={selbri6.guhek} />
+			<ShowSpan span={selbri6.selbri} />
+			<ShowSpan span={selbri6.gik} />
+			<Selbri6Box selbri6={selbri6.selbri6} />
+		</div>
+	);
 }
 
 export function TanruUnitBox({ unit }: { unit: G.TanruUnit }) {

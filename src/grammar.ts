@@ -450,11 +450,11 @@ export interface Selbri3 extends Span {
 export interface Selbri4 extends Span {
 	type: "selbri-4";
 	first: Selbri5;
-	rest: JoiSelbri[];
+	rest: JkSelbri5[];
 }
 
-export interface JoiSelbri extends Span {
-	type: "joi-selbri";
+export interface JkSelbri5 extends Span {
+	type: "jk-selbri-5";
 	jk: JoikJek;
 	selbri5: Selbri5;
 	// The joik [stag] stuff is weird, might not implement it
@@ -466,18 +466,42 @@ export interface JoiSelbri extends Span {
 export interface Selbri5 extends Span {
 	type: "selbri-5";
 	first: Selbri6;
-	// TODO: [(jek | joik) [stag] BO # selbri-5]
+	rest: JkBoSelbri5 | undefined;
+}
+
+export interface JkBoSelbri5 extends Span {
+	type: "jk-bo-selbri-5";
+	jk: Jek | Joik;
+	stag: Stag | undefined;
+	bo: CmavoWithFrees;
+	selbri5: Selbri5;
 }
 
 /// selbri-6 =
 ///     tanru-unit [BO # selbri-6]
 ///     | [NAhE #] guhek selbri gik selbri-6
 
-export interface Selbri6 extends Span {
-	type: "selbri-6";
+export type Selbri6 = Selbri6Plain | Selbri6Guhek;
+
+export interface Selbri6Plain extends Span {
+	type: "selbri-6-plain";
 	tanruUnit: TanruUnit;
-	// TODO: [BO # selbri-6]
-	// TODO: |  [NAhE #] guhek selbri gik selbri-6
+	rest: BoSelbri6 | undefined;
+}
+
+export interface BoSelbri6 extends Span {
+	type: "bo-selbri-6";
+	bo: CmavoWithFrees;
+	selbri6: Selbri6;
+}
+
+export interface Selbri6Guhek extends Span {
+	type: "selbri-6-guhek";
+	nahe: CmavoWithFrees | undefined;
+	guhek: Guhek;
+	selbri: Selbri;
+	gik: Gik;
+	selbri6: Selbri6;
 }
 
 /// tanru-unit =

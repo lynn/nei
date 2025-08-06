@@ -3,6 +3,7 @@
 import { ParseError, Unsupported } from "./error";
 import type {
 	BeiLink,
+	BoSelbri6,
 	BridiTail,
 	BridiTail1,
 	BridiTail2,
@@ -12,10 +13,13 @@ import type {
 	Fragment,
 	Gihek,
 	GihekTail,
+	Gik,
+	Guhek,
 	Ibo,
 	IboStatement2,
 	IjekStatement2,
 	Item,
+	JkBoSelbri5,
 	JoiSelbri,
 	Linkargs,
 	Naku,
@@ -405,21 +409,118 @@ export class Parser extends BaseParser {
 
 	private parseSelbri5(): Selbri5 {
 		const selbri6 = this.parseSelbri6();
+		const rest = this.tryParseJkBoSelbri5();
 		return {
 			type: "selbri-5",
 			start: selbri6.start,
-			end: selbri6.end,
+			end: rest?.end ?? selbri6.end,
 			first: selbri6,
+			rest,
+		};
+	}
+
+	private tryParseJkBoSelbri5(): JkBoSelbri5 | undefined {
+		const backtrack = this.index;
+		const jk = this.tryParseJoik() ?? this.tryParseJek();
+		if (!jk) return undefined;
+		const stag = undefined; // TODO this.tryParseStag();
+		const bo = this.tryParseCmavoWithFrees("BO");
+		if (bo === undefined) {
+			this.index = backtrack;
+			return undefined;
+		}
+		const selbri5 = this.parseSelbri5();
+		return {
+			type: "jk-bo-selbri-5",
+			start: jk.start,
+			end: bo.end,
+			jk,
+			stag,
+			bo,
+			selbri5,
 		};
 	}
 
 	private parseSelbri6(): Selbri6 {
+		const backtrack = this.index;
+		const nahe = this.tryParseCmavoWithFrees("NAhE");
+		const guhek = this.tryParseGuhek();
+		if (guhek !== undefined) {
+			const selbri = this.parseSelbri();
+			const gik = this.parseGik();
+			if (gik !== undefined) {
+				const selbri6 = this.parseSelbri6();
+				return {
+					type: "selbri-6-guhek",
+					start: nahe?.start ?? guhek.start,
+					end: selbri6.end,
+					nahe,
+					guhek,
+					selbri,
+					gik,
+					selbri6,
+				};
+			}
+		}
+
+		this.index = backtrack;
 		const tanruUnit = this.parseTanruUnit();
+		const rest = this.tryParseBoSelbri6();
 		return {
-			type: "selbri-6",
+			type: "selbri-6-plain",
 			start: tanruUnit.start,
-			end: tanruUnit.end,
+			end: rest?.end ?? tanruUnit.end,
 			tanruUnit,
+			rest,
+		};
+	}
+
+	private tryParseBoSelbri6(): BoSelbri6 | undefined {
+		const bo = this.tryParseCmavoWithFrees("BO");
+		if (bo === undefined) return undefined;
+		const selbri6 = this.parseSelbri6();
+		return {
+			type: "bo-selbri-6",
+			start: bo.start,
+			end: selbri6.end,
+			bo,
+			selbri6,
+		};
+	}
+
+	private tryParseGuhek(): Guhek | undefined {
+		const backtrack = this.index;
+		const se = this.tryParseCmavo("SE");
+		const guha = this.tryParseCmavo("GUhA");
+		if (guha === undefined) {
+			this.index = backtrack;
+			return undefined;
+		}
+		const nai = this.tryParseCmavo("NAI");
+		const frees = this.parseFrees();
+		return {
+			type: "guhek",
+			start: se ?? guha,
+			end: frees.length ? frees[frees.length - 1].end : (nai ?? guha),
+			se,
+			guha,
+			nai,
+			frees,
+		};
+	}
+
+	private parseGik(): Gik {
+		const gi = this.tryParseCmavo("GI");
+		if (gi === undefined) throw new ParseError("expected gi");
+		const nai = this.tryParseCmavo("NAI");
+		const frees = this.parseFrees();
+		return {
+			type: "gik",
+			start: gi,
+			end: frees.length ? frees[frees.length - 1].end : (nai ?? gi),
+			gi,
+			nai,
+			frees,
 		};
 	}
 
