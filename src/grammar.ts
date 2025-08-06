@@ -1,3 +1,5 @@
+export type Many<T> = T[] & { 0: T };
+
 export type TokenIndex = number;
 
 export interface Span {
@@ -222,7 +224,7 @@ export interface Terms<Role> extends Span {
 
 /// term = sumti | (tag | FA #) (sumti | /KU#/) | termset | NA KU #
 
-export type Term<Role> = Sumti<Role> | Tagged | Naku; // TODO: others
+export type Term<Role> = Sumti<Role> | Tagged | Naku; // TODO: termset
 
 export interface Tagged extends Span {
 	type: "tagged";
@@ -318,7 +320,8 @@ export type Sumti6 =
 	| Sumti6Lerfu
 	| Sumti6La
 	| Sumti6Le
-	| Sumti6Li; // TODO: quotes
+	| Sumti6Li
+	| Sumti6Zo; // TODO: more quotes
 
 export interface Sumti6Lahe extends Span {
 	type: "sumti-6-lahe";
@@ -368,6 +371,12 @@ export interface Sumti6Li extends Span {
 	li: CmavoWithFrees;
 	lerfuString: LerfuString; // not doing mekso...
 	loho: CmavoWithFrees | undefined;
+}
+
+export interface Sumti6Zo extends Span {
+	type: "sumti-6-zo";
+	// The tokenizer already merged the ZO with the next word.
+	zo: CmavoWithFrees;
 }
 
 /// sumti-tail = [sumti-6 [relative-clauses]] sumti-tail-1 | relative-clauses sumti-tail-1
@@ -442,7 +451,7 @@ export interface Selbri2 extends Span {
 
 export interface Selbri3 extends Span {
 	type: "selbri-3";
-	selbri4s: Selbri4[] & { 0: Selbri4 };
+	selbri4s: Many<Selbri4>;
 }
 
 /// selbri-4 = selbri-5 [joik-jek selbri-5 | joik [stag] KE # selbri-3 /KEhE#/] ...
@@ -509,8 +518,14 @@ export interface Selbri6Guhek extends Span {
 
 export interface TanruUnit extends Span {
 	type: "tanru-unit";
+	first: TanruUnit1;
+	rest: CeiTanruUnit1[];
+}
+
+export interface CeiTanruUnit1 extends Span {
+	type: "cei-tanru-unit-1";
+	cei: CmavoWithFrees;
 	tanruUnit1: TanruUnit1;
-	// TODO: cei
 }
 
 /// tanru-unit-1 =

@@ -31,12 +31,89 @@ export interface Token {
 	line: number;
 	/** 1-indexed. */
 	column: [number, number];
+	/** Erased source text before this token. */
+	erased: string[];
 	/** Source text, like `.A'E` or `lojbo,` */
 	sourceText: string;
 	/** Clean form, like `a'e` or `lojbo` */
 	lexeme: string;
 	/** Token type */
 	selmaho: Selmaho;
+}
+
+export class Tokenizer {
+	private lineIndex = 1;
+	private tokens: Token[] = [];
+	private erased: string[] = [];
+	private lastZo: boolean = false;
+
+	private push(
+		column: [number, number],
+		sourceText: string,
+		lexeme: string,
+		selmaho: Selmaho,
+	) {
+		if (this.lastZo) {
+			const zo = this.tokens.pop();
+			if (!zo) throw new Error("impossible");
+			this.tokens.push({
+				...zo,
+				column: [zo.column[0], column[1]],
+				sourceText: `${zo.sourceText} ${sourceText}`,
+				lexeme: "zo",
+				selmaho: "ZO",
+			});
+			this.lastZo = false;
+		} else if (lexeme === "si") {
+			this.erased = [
+				this.tokens.pop()?.sourceText ?? "?",
+				...this.erased,
+				sourceText,
+			];
+		} else {
+			this.tokens.push({
+				index: this.tokens.length,
+				line: this.lineIndex,
+				column,
+				erased: [...this.erased],
+				sourceText,
+				lexeme,
+				selmaho,
+			});
+			this.lastZo = lexeme === "zo";
+			this.erased = [];
+		}
+	}
+
+	tokenize(text: string): Token[] {
+		this.lineIndex = 1;
+		this.tokens = [];
+		for (const line of text.split("\n")) {
+			for (const word of line.matchAll(/\S+/g)) {
+				const wordStart = word.index + 1;
+				const wordEnd = word.index + word[0].length;
+				if (/^([bcdfgjklmnprstvxz.']?[aeiou]+)+$/.test(word[0])) {
+					// This is a cmavo compound. Split it into cmavo:
+					for (const cmavo of word[0].matchAll(
+						/[bcdfgjklmnprstvxz.]?[aeiou]+('[aeiou]+)*/g,
+					)) {
+						const cmavoStart = wordStart + cmavo.index;
+						const cmavoEnd = wordStart + cmavo.index + cmavo[0].length - 1;
+						const sourceText = cmavo[0];
+						const lexeme = wordToLexeme(sourceText);
+						const selmaho = getSelmaho(lexeme);
+						this.push([cmavoStart, cmavoEnd], sourceText, lexeme, selmaho);
+					}
+				} else {
+					// It's a brivla, or an attempt at one.
+					const lexeme = wordToLexeme(word[0]);
+					this.push([wordStart, wordEnd], word[0], lexeme, getSelmaho(lexeme));
+				}
+			}
+			this.lineIndex++;
+		}
+		return this.tokens;
+	}
 }
 
 export function wordToLexeme(word: string): string {
@@ -48,48 +125,4 @@ export function getSelmaho(lexeme: string): Selmaho {
 		(cmavo as Record<string, Selmaho>)[lexeme] ??
 		(/[aeiou]$/.test(lexeme) ? "BRIVLA" : "CMEVLA")
 	);
-}
-
-export function tokenize(text: string): Token[] {
-	let lineIndex = 1;
-	const tokens: Token[] = [];
-	for (const line of text.split("\n")) {
-		for (const word of line.matchAll(/\S+/g)) {
-			const wordStart = word.index + 1;
-			const wordEnd = word.index + word[0].length;
-			if (/^([bcdfgjklmnprstvxz.']?[aeiou]+)+$/.test(word[0])) {
-				// This is a cmavo compound. Split it into cmavo:
-				for (const cmavo of word[0].matchAll(
-					/[bcdfgjklmnprstvxz.]?[aeiou]+('[aeiou]+)*/g,
-				)) {
-					const cmavoStart = wordStart + cmavo.index;
-					const cmavoEnd = wordStart + cmavo.index + cmavo[0].length - 1;
-					const sourceText = cmavo[0];
-					const lexeme = wordToLexeme(sourceText);
-					const selmaho = getSelmaho(lexeme);
-					tokens.push({
-						index: tokens.length,
-						line: lineIndex,
-						column: [cmavoStart, cmavoEnd],
-						sourceText,
-						lexeme,
-						selmaho,
-					});
-				}
-			} else {
-				// It's a brivla, or an attempt at one.
-				const lexeme = wordToLexeme(word[0]);
-				tokens.push({
-					index: tokens.length,
-					line: lineIndex,
-					column: [wordStart, wordEnd],
-					sourceText: word[0],
-					lexeme: lexeme,
-					selmaho: getSelmaho(lexeme),
-				});
-			}
-		}
-		lineIndex++;
-	}
-	return tokens;
 }

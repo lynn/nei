@@ -7,27 +7,37 @@ import { isTenseSelmaho, type Token } from "./tokenize";
 
 export const TokenContext = createContext<Token[]>([]);
 
+export function ShowToken({ token }: { token: Token }) {
+	return (
+		<div className="inline-flex flex-col">
+			<pre
+				class="inline-block tracking-tighter hover:bg-black/10"
+				style={{
+					color:
+						token.lexeme === "bisladru"
+							? "#e03000"
+							: isTenseSelmaho(token.selmaho)
+								? "#c00080"
+								: "black",
+				}}
+			>
+				{token.erased.length > 0 && (
+					<span class="whitespace-pre opacity-50">
+						<del class="line-through">{token.erased.join(" ")}</del>{" "}
+					</span>
+				)}
+				{token.sourceText}
+			</pre>
+		</div>
+	);
+}
+
 export function ShowTokens({ start, end }: { start: number; end: number }) {
 	const tokens = useContext(TokenContext);
 	return (
 		<span className="inline-flex flex-row gap-2 items-baseline mb-1">
 			{tokens.slice(start, end + 1).map((token, index) => (
-				<div className="inline-flex flex-col">
-					<pre
-						class="inline-block tracking-tighter"
-						style={{
-							color:
-								token.lexeme === "bisladru"
-									? "#e03000"
-									: isTenseSelmaho(token.selmaho)
-										? "#c00080"
-										: "black",
-						}}
-						key={index}
-					>
-						{token.sourceText}
-					</pre>
-				</div>
+				<ShowToken token={token} key={index} />
 			))}
 		</span>
 	);
@@ -377,7 +387,17 @@ export function Selbri6Box({ selbri6 }: { selbri6: G.Selbri6 }) {
 }
 
 export function TanruUnitBox({ unit }: { unit: G.TanruUnit }) {
-	return <TanruUnit1Box unit={unit.tanruUnit1} />;
+	return (
+		<div class="row">
+			<TanruUnit1Box unit={unit.first} />
+			{unit.rest.map((r) => (
+				<div class="row">
+					<ShowSpan span={r.cei} />
+					<TanruUnit1Box unit={r.tanruUnit1} />
+				</div>
+			))}
+		</div>
+	);
 }
 
 export function TanruUnit1Box({ unit }: { unit: G.TanruUnit1 }) {

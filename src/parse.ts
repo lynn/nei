@@ -9,6 +9,7 @@ import type {
 	BridiTail2,
 	BridiTail3,
 	BrivlaWithFrees,
+	CeiTanruUnit1,
 	Floating,
 	Fragment,
 	Gihek,
@@ -20,8 +21,9 @@ import type {
 	IjekStatement2,
 	Item,
 	JkBoSelbri5,
-	JoiSelbri,
+	JkSelbri5,
 	Linkargs,
+	Many,
 	Naku,
 	Nihos,
 	Paragraph,
@@ -365,7 +367,7 @@ export class Parser extends BaseParser {
 
 	private parseSelbri3(): Selbri3 {
 		const first = this.parseSelbri4();
-		const tanru: Selbri4[] & { 0: Selbri4 } = [first];
+		const tanru: Many<Selbri4> = [first];
 		let end = first.end;
 
 		this.log("Is this selbri a tanru?", first);
@@ -385,13 +387,13 @@ export class Parser extends BaseParser {
 
 	private parseSelbri4(): Selbri4 {
 		const selbri5 = this.parseSelbri5();
-		const rest: JoiSelbri[] = [];
+		const rest: JkSelbri5[] = [];
 		while (true) {
 			const jk = this.tryParseJoikJek();
 			if (!jk) break;
 			const selbri5 = this.parseSelbri5();
 			rest.push({
-				type: "joi-selbri",
+				type: "jk-selbri-5",
 				start: jk.start,
 				end: selbri5.end,
 				jk,
@@ -525,11 +527,31 @@ export class Parser extends BaseParser {
 	}
 
 	private parseTanruUnit(): TanruUnit {
-		const tanruUnit1 = this.parseTanruUnit1();
+		const first = this.parseTanruUnit1();
+		const rest: CeiTanruUnit1[] = [];
+		while (true) {
+			const cei = this.tryParseCeiTanruUnit1();
+			if (cei === undefined) break;
+			rest.push(cei);
+		}
 		return {
 			type: "tanru-unit",
-			start: tanruUnit1.start,
+			start: first.start,
+			end: rest.length > 0 ? rest[rest.length - 1].end : first.end,
+			first,
+			rest,
+		};
+	}
+
+	private tryParseCeiTanruUnit1(): CeiTanruUnit1 | undefined {
+		const cei = this.tryParseCmavoWithFrees("CEI");
+		if (cei === undefined) return undefined;
+		const tanruUnit1 = this.parseTanruUnit1();
+		return {
+			type: "cei-tanru-unit-1",
+			start: cei.start,
 			end: tanruUnit1.end,
+			cei,
 			tanruUnit1,
 		};
 	}
@@ -870,6 +892,17 @@ export class Parser extends BaseParser {
 				end: boi?.end ?? lerfuString.end,
 				lerfuString,
 				boi,
+			};
+		}
+
+		if (token.selmaho === "ZO") {
+			// The tokenizer already merged the ZO with the next word.
+			const zo = this.tryParseCmavoWithFrees("ZO")!;
+			return {
+				type: "sumti-6-zo",
+				start: zo.start,
+				end: zo.end,
+				zo,
 			};
 		}
 

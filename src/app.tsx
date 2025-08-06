@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import "./app.css";
 import { TextBox, TokenContext } from "./boxes";
 import { type ParseResult, type Snapshot, parse } from "./parse";
-import { tokenize, type Token } from "./tokenize";
+import { Tokenizer, type Token } from "./tokenize";
 
 interface IoProps {
 	input: string;
@@ -112,7 +112,7 @@ export function App() {
 
 	return (
 		<div class="flex flex-col min-h-screen p-4">
-			<h1 class="text-3xl font-bold">🔬 la taxtci</h1>
+			<h1 class="text-3xl font-bold">🔬 la nei</h1>
 			<div class="mb-8">sei gerna lanli tutci</div>
 			<div class="io-list">
 				{ios.map((io, index) => (
@@ -131,7 +131,7 @@ export function App() {
 							const input = e.currentTarget.value;
 							if (input.trim() === "") return;
 							e.currentTarget.value = "";
-							const tokens = tokenize(input);
+							const tokens = new Tokenizer().tokenize(input);
 							console.log(tokens);
 							const output = parse(tokens);
 							console.log(output);
