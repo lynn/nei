@@ -3,8 +3,7 @@
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import type * as G from "./grammar";
-import { Parser } from "./parse";
-import type { Token } from "./tokenize";
+import { isTenseSelmaho, type Token } from "./tokenize";
 
 export const TokenContext = createContext<Token[]>([]);
 
@@ -20,7 +19,7 @@ export function ShowTokens({ start, end }: { start: number; end: number }) {
 							color:
 								token.lexeme === "bisladru"
 									? "#e03000"
-									: new Parser([]).isTenseSelmaho(token.selmaho)
+									: isTenseSelmaho(token.selmaho)
 										? "#c00080"
 										: "black",
 						}}

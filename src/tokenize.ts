@@ -2,6 +2,29 @@ import { cmavo } from "./cmavo";
 
 export type Selmaho = "BRIVLA" | "CMEVLA" | (typeof cmavo)[keyof typeof cmavo];
 
+export function isTenseSelmaho(selmaho: Selmaho): boolean {
+	return [
+		"FA", // dubious but CLL says so
+		"BAI",
+		"CAhA",
+		"KI",
+		"CUhE",
+		"ZI",
+		"ZEhA",
+		"PU",
+		"NAI", // ehhh
+		"VA",
+		"MOhI",
+		"FAhA",
+		"VEhA",
+		"VIhA",
+		"FEhE",
+		// TODO: handle number+roi here
+		"TAhE",
+		"ZAhO",
+	].includes(selmaho);
+}
+
 export interface Token {
 	index: number;
 	/** 1-indexed: line the token was on in the source text. */
@@ -34,10 +57,10 @@ export function tokenize(text: string): Token[] {
 		for (const word of line.matchAll(/\S+/g)) {
 			const wordStart = word.index + 1;
 			const wordEnd = word.index + word[0].length;
-			if (/^([bcdfgjklmnprstvxz.']?[aeiouy]+)+$/.test(word[0])) {
+			if (/^([bcdfgjklmnprstvxz.']?[aeiou]+)+$/.test(word[0])) {
 				// This is a cmavo compound. Split it into cmavo:
 				for (const cmavo of word[0].matchAll(
-					/[bcdfgjklmnprstvxz.]?[aeiouy]+('[aeiouy]+)*/g,
+					/[bcdfgjklmnprstvxz.]?[aeiou]+('[aeiou]+)*/g,
 				)) {
 					const cmavoStart = wordStart + cmavo.index;
 					const cmavoEnd = wordStart + cmavo.index + cmavo[0].length - 1;
