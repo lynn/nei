@@ -160,11 +160,31 @@ export function StatementBox({ statement }: { statement: G.Statement }) {
 }
 
 export function Statement1Box({ statement1 }: { statement1: G.Statement1 }) {
-	return <Statement2Box statement2={statement1.first} />;
+	return (
+		<div className="row">
+			<Statement2Box statement2={statement1.first} />
+			{statement1.rest.map((r) => (
+				<div className="row">
+					<ShowSpan span={r.ijek} />
+					<Statement2Box statement2={r.statement2} />
+				</div>
+			))}
+		</div>
+	);
 }
 
 export function Statement2Box({ statement2 }: { statement2: G.Statement2 }) {
-	return <Statement3Box statement3={statement2.first} />;
+	return (
+		<div className="row">
+			<Statement3Box statement3={statement2.first} />
+			{statement2.rest.map((r) => (
+				<div className="row">
+					<ShowSpan span={r.ibo} />
+					<Statement2Box statement2={r.statement2} />
+				</div>
+			))}
+		</div>
+	);
 }
 
 export function Statement3Box({ statement3 }: { statement3: G.Statement3 }) {
