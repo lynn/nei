@@ -108,8 +108,7 @@ export function Text1Box({ text1 }: { text1: G.Text1 }) {
 }
 export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 	return (
-		<div className="box col bg-gray-200 outline-none">
-			<b>paragraph</b>
+		<div className="box col bg-gray-300 outline-none">
 			<div className="row">
 				{paragraph.niho && (
 					<div className="box col bg-green-100">
@@ -645,6 +644,8 @@ export function Sumti5LargeBox({ span }: { span: G.Sumti5Large }) {
 export function Sumti6Box({ span }: { span: G.Sumti6 }) {
 	return span.type === "sumti-6-le" ? (
 		<Sumti6LeBox span={span} />
+	) : span.type === "sumti-6-lu" ? (
+		<Sumti6LuBox span={span} />
 	) : (
 		<ShowSpan span={span} />
 	);
@@ -656,6 +657,16 @@ export function Sumti6LeBox({ span }: { span: G.Sumti6Le }) {
 			<ShowSpan span={span.le} />
 			<SumtiTailBox span={span.sumtiTail} />
 			<ShowSpan span={span.ku} />
+		</div>
+	);
+}
+
+export function Sumti6LuBox({ span }: { span: G.Sumti6Lu }) {
+	return (
+		<div className="row">
+			<ShowTokens start={span.lu} end={span.lu} />
+			<TextBox text={span.text} />
+			<ShowSpan span={span.lihu} />
 		</div>
 	);
 }

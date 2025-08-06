@@ -109,7 +109,6 @@ export class Parser extends BaseParser {
 	}
 
 	private tryParsePretext(): Pretext | undefined {
-		this.begin("pretext");
 		const nais = this.parseCmavos("NAI");
 		const cmevlas = this.parseCmavos("CMEVLA");
 		const frees = this.parseFrees();
@@ -895,25 +894,28 @@ export class Parser extends BaseParser {
 			};
 		}
 
-		if (token.selmaho === "ZO") {
+		if (token.selmaho === "QUOTE") {
 			// The tokenizer already merged the ZO with the next word.
-			const zo = this.tryParseCmavoWithFrees("ZO")!;
+			const quote = this.tryParseCmavoWithFrees("QUOTE")!;
 			return {
-				type: "sumti-6-zo",
-				start: zo.start,
-				end: zo.end,
-				zo,
+				type: "sumti-6-quote",
+				start: quote.start,
+				end: quote.end,
+				quote,
 			};
 		}
 
-		if (token.selmaho === "LOhU") {
-			// The tokenizer already merged LOhU-text-LEhU into one token.
-			const lohu = this.tryParseCmavoWithFrees("LOhU")!;
+		if (token.selmaho === "LU") {
+			const lu = this.nextToken()!;
+			const text = this.parseText();
+			const lihu = this.tryParseCmavoWithFrees("LIhU");
 			return {
-				type: "sumti-6-lohu",
-				start: lohu.start,
-				end: lohu.end,
-				lohu,
+				type: "sumti-6-lu",
+				start: lu.index,
+				end: lihu?.end ?? text.end,
+				lu: lu.index,
+				text,
+				lihu,
 			};
 		}
 
@@ -996,10 +998,8 @@ export class Parser extends BaseParser {
 			this.isAhead(["LA"]) ||
 			this.isAhead(["LE"]) ||
 			this.isAhead(["LI"]) ||
-			this.isAhead(["ZO"]) || // TODO: magic
-			this.isAhead(["LU"]) ||
-			this.isAhead(["LOhU"]) ||
-			this.isAhead(["ZOI"]) // TODO: magic
+			this.isAhead(["QUOTE"]) ||
+			this.isAhead(["LU"])
 		);
 	}
 

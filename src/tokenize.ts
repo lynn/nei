@@ -1,6 +1,10 @@
 import { cmavo } from "./cmavo";
 
-export type Selmaho = "BRIVLA" | "CMEVLA" | (typeof cmavo)[keyof typeof cmavo];
+export type Selmaho =
+	| "BRIVLA"
+	| "CMEVLA"
+	| (typeof cmavo)[keyof typeof cmavo]
+	| "QUOTE";
 
 export function isTenseSelmaho(selmaho: Selmaho): boolean {
 	return [
@@ -62,7 +66,7 @@ export class Tokenizer {
 				column: [zo.column[0], column[1]],
 				sourceText: `${zo.sourceText} ${sourceText}`,
 				lexeme: "zo",
-				selmaho: "ZO",
+				selmaho: "QUOTE",
 			});
 			this.lastZo = false;
 		} else if (lexeme === "lo'u") {
@@ -78,7 +82,7 @@ export class Tokenizer {
 					erased: [...this.erased],
 					sourceText: this.lohuSource.join(" "),
 					lexeme: "lo'u",
-					selmaho: "LOhU",
+					selmaho: "QUOTE",
 				});
 				this.lohuSource = undefined;
 				this.erased = [];
