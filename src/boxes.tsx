@@ -525,11 +525,25 @@ export function TermBox({
 	);
 }
 
-export function ExplainRoleIn({
-	role,
+export function ShowXIndex({
+	xIndex,
+	selbri,
 }: {
-	role: { xIndex: number; verb: G.Span };
+	xIndex: number | "fai" | "?" | "modal";
+	selbri: string;
 }) {
+	return xIndex === "modal" ? (
+		<span>
+			modal to <i>{selbri}</i>
+		</span>
+	) : (
+		<span>
+			x<sub>{xIndex}</sub> of <i>{selbri}</i>
+		</span>
+	);
+}
+
+export function ExplainRoleIn({ role }: { role: G.Role }) {
 	const tokens = useContext(TokenContext);
 	const lexemes = tokens
 		.slice(role.verb.start, role.verb.end + 1)
@@ -555,10 +569,11 @@ export function ExplainRoleIn({
 
 	return (
 		<span>
-			x<sub>{role.xIndex}</sub> of <i>{lexemes.join(" ")}</i>
+			<ShowXIndex xIndex={role.xIndex} selbri={lexemes.join(" ")} />
 			{si > 0 && (
 				<span class="opacity-50">
-					<br />x<sub>{sx}</sub> of <i>{lexemes.slice(si).join(" ")}</i>
+					<br />
+					<ShowXIndex xIndex={sx} selbri={lexemes.slice(si).join(" ")} />
 				</span>
 			)}
 		</span>
@@ -601,7 +616,11 @@ export function SumtiBox({
 }) {
 	return (
 		<div className="box col bg-amber-100">
-			{sumti.role ? <ExplainRole role={sumti.role} /> : <b>sumti</b>}
+			{sumti.role !== "floating" ? (
+				<ExplainRole role={sumti.role} />
+			) : (
+				<b>sumti</b>
+			)}
 			<div className="row">
 				<Sumti1Box span={sumti.sumti1} />
 				<LabelBox label="complex relator" span={sumti.vuho} />
@@ -746,10 +765,18 @@ export function RelativeClauseBox({ span }: { span: G.RelativeClause }) {
 	);
 }
 
-export function TaggedBox({ span }: { span: G.Tagged }) {
+export function TaggedBox({
+	span,
+}: {
+	span: G.Tagged<G.Positional> | G.Tagged<G.Floating>;
+}) {
 	return (
 		<div className="box col bg-purple-100">
-			<b>tagged</b>
+			{span.role !== "floating" ? (
+				<ExplainRole role={span.role} />
+			) : (
+				<b>tagged</b>
+			)}
 			<div className="row">
 				<TagBox tag={span.tagOrFa} />
 				{span.sumtiOrKu &&

@@ -10,6 +10,7 @@ import type {
 	BridiTail3,
 	BrivlaWithFrees,
 	CeiTanruUnit1,
+	CmavoWithFrees,
 	Floating,
 	Fragment,
 	Gihek,
@@ -749,7 +750,7 @@ export class Parser extends BaseParser {
 			sumti1,
 			vuho,
 			relativeClauses,
-			role: undefined,
+			role: "floating",
 		};
 	}
 
@@ -1092,7 +1093,7 @@ export class Parser extends BaseParser {
 		});
 	}
 
-	private parseTagged(): Tagged {
+	private parseTagged(): Tagged<Floating> {
 		const fa = this.tryParseCmavoWithFrees("FA");
 		const tagOrFa = fa ?? this.parseTag();
 		const sumtiOrKu = this.isSumtiAhead()
@@ -1104,6 +1105,7 @@ export class Parser extends BaseParser {
 			end: sumtiOrKu?.end ?? tagOrFa?.end,
 			tagOrFa,
 			sumtiOrKu,
+			role: "floating",
 		};
 	}
 
@@ -1159,11 +1161,11 @@ export class Parser extends BaseParser {
 		this.begin("sentence");
 		const head: Term<Floating>[] = [];
 		const headState: TerbriState = { x: 1, filled: 0n };
-		const headPositions: number[] = [];
+		const headPositions: (number | "fai" | "?" | "modal")[] = [];
 		while (true) {
 			const term = this.tryParseTerm();
 			if (!term) {
-				this.log(`No more terms in head!`);
+				this.log(`No more terms in head`);
 				break;
 			}
 			this.log(`Parsed term`, term);
@@ -1174,14 +1176,15 @@ export class Parser extends BaseParser {
 				while (headState.filled & (1n << BigInt(headState.x))) headState.x++;
 			} else if (term.type === "tagged" && term.tagOrFa.type !== "tag") {
 				// FA
-				const num =
-					"aeiou".indexOf(this.tokens[term.tagOrFa.cmavo].lexeme[1]) + 1;
+				const num = this.faToXIndex(term.tagOrFa);
 				headPositions.push(num);
-				headState.filled |= 1n << BigInt(num);
-				headState.x = num;
-				while (headState.filled & (1n << BigInt(headState.x))) headState.x++;
+				if (typeof num === "number") {
+					headState.filled |= 1n << BigInt(num);
+					headState.x = num;
+					while (headState.filled & (1n << BigInt(headState.x))) headState.x++;
+				}
 			} else {
-				headPositions.push(NaN);
+				headPositions.push("modal");
 			}
 		}
 		const cu = head.length ? this.tryParseCmavoWithFrees("CU") : undefined;
@@ -1198,8 +1201,9 @@ export class Parser extends BaseParser {
 						start: head[0].start,
 						end: head[head.length - 1].end,
 						terms: head.map((term, i) =>
-							term.type === "sumti"
-								? {
+							term.type === "naku"
+								? term
+								: {
 										...term,
 										role: {
 											roles: tertaus.map((t) => ({
@@ -1207,8 +1211,7 @@ export class Parser extends BaseParser {
 												verb: t.tertau,
 											})),
 										},
-									}
-								: term,
+									},
 						),
 					}
 				: undefined;
@@ -1332,6 +1335,18 @@ export class Parser extends BaseParser {
 		};
 	}
 
+	private faToXIndex(fa: CmavoWithFrees): number | "fai" | "?" {
+		const lexeme = this.tokens[fa.cmavo].lexeme;
+		if (lexeme === "fa") return 1;
+		if (lexeme === "fe") return 2;
+		if (lexeme === "fi") return 3;
+		if (lexeme === "fo") return 4;
+		if (lexeme === "fu") return 5;
+		if (lexeme === "fai") return "fai";
+		if (lexeme === "fi'a") return "?";
+		return 1;
+	}
+
 	private placeTailTerms(
 		tailTerms: TailTerms<Floating>,
 		tertaus: Tertau[],
@@ -1340,20 +1355,17 @@ export class Parser extends BaseParser {
 		let iterTertaus = tertaus;
 
 		for (const term of tailTerms.terms?.terms ?? []) {
-			placed.push(
-				"role" in term
-					? {
-							...term,
-							role: {
-								roles: iterTertaus.map((s) => ({
-									xIndex: s.state.x,
-									verb: s.tertau,
-								})),
-							},
-						}
-					: term,
-			);
 			if (term.type === "sumti") {
+				placed.push({
+					...term,
+					role: {
+						roles: iterTertaus.map((s) => ({
+							xIndex: s.state.x,
+							verb: s.tertau,
+						})),
+					},
+				});
+
 				iterTertaus = iterTertaus.map((s) => {
 					const newFilled = s.state.filled | (1n << BigInt(s.state.x));
 					let newX = s.state.x;
@@ -1362,16 +1374,41 @@ export class Parser extends BaseParser {
 					}
 					return { ...s, state: { x: newX, filled: newFilled } };
 				});
-			} else if (term.type === "tagged" && term.tagOrFa.type !== "tag") {
-				// FA
-				const fa = term.tagOrFa;
-				iterTertaus = iterTertaus.map((s) => {
-					const num = "aeiou".indexOf(this.tokens[fa.cmavo].lexeme[1]) + 1;
-					const newFilled = s.state.filled | (1n << BigInt(num));
-					let newX = num;
-					while (newFilled & (1n << BigInt(newX))) newX++;
-					return { ...s, state: { x: newX, filled: newFilled } };
-				});
+			} else if (term.type === "tagged") {
+				if (term.tagOrFa.type !== "tag") {
+					// FA
+					const fa = term.tagOrFa;
+					const num = this.faToXIndex(fa);
+
+					placed.push({
+						...term,
+						role: {
+							roles: iterTertaus.map((s) => ({
+								xIndex: num,
+								verb: s.tertau,
+							})),
+						},
+					});
+
+					if (typeof num === "number") {
+						iterTertaus = iterTertaus.map((s) => {
+							const newFilled = s.state.filled | (1n << BigInt(num));
+							let newX = num;
+							while (newFilled & (1n << BigInt(newX))) newX++;
+							return { ...s, state: { x: newX, filled: newFilled } };
+						});
+					}
+				} else {
+					placed.push({
+						...term,
+						role: {
+							roles: iterTertaus.map((s) => ({
+								xIndex: "modal",
+								verb: s.tertau,
+							})),
+						},
+					});
+				}
 			}
 		}
 

@@ -11,11 +11,16 @@ export interface Brivla extends Span {
 	type: "brivla";
 }
 
-export type Floating = undefined;
+export type Floating = "floating";
+
+export interface Role {
+	xIndex: number | "fai" | "?" | "modal";
+	verb: Span;
+}
 
 /** For example Sumti<Positional> has positional role info */
 export interface Positional {
-	roles: { xIndex: number; verb: Span }[];
+	roles: Role[];
 }
 
 /// text =
@@ -224,12 +229,13 @@ export interface Terms<Role> extends Span {
 
 /// term = sumti | (tag | FA #) (sumti | /KU#/) | termset | NA KU #
 
-export type Term<Role> = Sumti<Role> | Tagged | Naku; // TODO: termset
+export type Term<Role> = Sumti<Role> | Tagged<Role> | Naku; // TODO: termset
 
-export interface Tagged extends Span {
+export interface Tagged<Role> extends Span {
 	type: "tagged";
 	tagOrFa: Tag | CmavoWithFrees;
 	sumtiOrKu: Sumti<Floating> | CmavoWithFrees | undefined;
+	role: Role;
 }
 
 export interface Naku extends Span {
