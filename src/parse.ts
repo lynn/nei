@@ -11,18 +11,25 @@ import type {
 	BrivlaWithFrees,
 	CeiTanruUnit1,
 	CmavoWithFrees,
+	Cmene,
 	Floating,
 	Fragment,
+	Free,
 	Gihek,
 	GihekTail,
 	Gik,
 	Guhek,
 	Ibo,
 	IboStatement2,
+	Ijek,
 	IjekStatement2,
+	Indicator,
 	Item,
+	Jek,
 	JkBoSelbri5,
 	JkSelbri5,
+	Joik,
+	JoikJek,
 	Linkargs,
 	Many,
 	Naku,
@@ -95,6 +102,49 @@ export interface Tertau {
 	state: TerbriState;
 }
 
+type HasIndex = Span | Token | TokenIndex | undefined | HasIndex[];
+
+function startOf(...spans: HasIndex[]): TokenIndex {
+	for (const span of spans) {
+		if (typeof span === "number") return span;
+		if (span === undefined) continue;
+		if (Array.isArray(span)) {
+			const inner = startOf(...span);
+			if (inner === Number.POSITIVE_INFINITY) continue;
+			return inner;
+		}
+		if ("index" in span) return span.index;
+		return span.start;
+	}
+	return Number.POSITIVE_INFINITY;
+}
+
+function endOf(...spans: HasIndex[]): TokenIndex {
+	console.log("endOf before", spans);
+	for (let i = spans.length - 1; i >= 0; i--) {
+		const span = spans[i];
+		console.log("endOf", i, span);
+		if (typeof span === "number") return span;
+		if (span === undefined) continue;
+		if (Array.isArray(span)) {
+			const inner = endOf(...span);
+			if (inner === Number.NEGATIVE_INFINITY) continue;
+			return inner;
+		}
+		if ("index" in span) return span.index;
+		return span.end;
+	}
+	console.log("endOf", spans);
+	return Number.NEGATIVE_INFINITY;
+}
+
+function spanOf(...spans: HasIndex[]): Span {
+	return {
+		start: startOf(spans),
+		end: endOf(spans),
+	};
+}
+
 export class Parser extends BaseParser {
 	public parseText(): Text {
 		this.begin("text");
@@ -102,21 +152,32 @@ export class Parser extends BaseParser {
 		const text1 = this.parseText1();
 		return this.parsed("text", {
 			type: "text",
-			start: pretext?.start ?? text1.start,
-			end: text1.end,
+			...spanOf(pretext, text1),
 			pretext: pretext,
 			text1,
 		});
 	}
 
+	private tryParseCmene(): Cmene | undefined {
+		const cmevlas = this.parseCmavos("CMEVLA");
+		if (cmevlas.length === 0) return undefined;
+		const frees = this.parseFrees();
+		return {
+			type: "cmene",
+			...spanOf(cmevlas, frees),
+			cmevlas,
+			frees,
+		};
+	}
+
 	private tryParsePretext(): Pretext | undefined {
 		const nais = this.parseCmavos("NAI");
-		const cmevlas = this.parseCmavos("CMEVLA");
+		const cmene = this.tryParseCmene();
 		const frees = this.parseFrees();
 		const joikjek = this.tryParseJoikJek();
 		if (
 			nais.length === 0 &&
-			cmevlas.length === 0 &&
+			cmene === undefined &&
 			frees.length === 0 &&
 			joikjek === undefined
 		) {
@@ -124,16 +185,9 @@ export class Parser extends BaseParser {
 		}
 		return {
 			type: "pretext",
-			start: nais.length
-				? nais[0]
-				: cmevlas.length
-					? cmevlas[0]
-					: frees.length
-						? frees[0].start
-						: (joikjek?.start ?? 0),
-			end: (joikjek?.end ?? frees.length) ? frees[frees.length - 1].end : 0,
+			...spanOf(nais, cmene, frees, joikjek),
 			nais,
-			cmevlas,
+			cmene,
 			frees,
 			joikjek,
 		};
@@ -147,16 +201,13 @@ export class Parser extends BaseParser {
 			this.tryParseCmavoWithFrees("I");
 		const first = this.parseParagraph();
 		const paragraphs = [first];
-		let end = first.end;
 		while (this.peekToken()?.selmaho === "NIhO") {
 			const p = this.parseParagraph();
-			end = p.end;
 			paragraphs.push(p);
 		}
 		return {
 			type: "text-1",
-			start: i?.start ?? first.start,
-			end,
+			...spanOf(i, paragraphs),
 			firstSeparator: i,
 			paragraphs,
 		};
@@ -175,8 +226,7 @@ export class Parser extends BaseParser {
 		}
 		return {
 			type: "ibo",
-			start: i,
-			end: bo.end,
+			...spanOf(i, jk, stag, bo),
 			i,
 			jk,
 			stag,
@@ -190,8 +240,7 @@ export class Parser extends BaseParser {
 		const frees = this.parseFrees();
 		return {
 			type: "nihos",
-			start: nihos[0],
-			end: frees.length ? frees[frees.length - 1].end : nihos[nihos.length - 1],
+			...spanOf(nihos, frees),
 			nihos,
 			frees,
 		};
@@ -201,19 +250,18 @@ export class Parser extends BaseParser {
 		this.begin("paragraph");
 		const niho = this.tryParseNihos();
 		const first = this.parseTem();
-		const items: Item[] = [];
+		const rest: Item[] = [];
 		while (this.peekToken()?.selmaho === "I") {
 			const item = this.parseItem();
-			items.push(item);
+			rest.push(item);
 		}
 
 		return this.parsed("paragraph", {
 			type: "paragraph",
-			start: niho?.start ?? first.start,
-			end: items.length > 0 ? items[items.length - 1].end : first.end,
+			...spanOf(niho, first, rest),
 			niho,
 			first,
-			rest: items,
+			rest,
 		});
 	}
 
@@ -223,8 +271,7 @@ export class Parser extends BaseParser {
 		const tem = this.parseTem();
 		return this.parsed("item", {
 			type: "item",
-			start: i?.start ?? tem.start,
-			end: tem.end,
+			...spanOf(i, tem),
 			i,
 			tem,
 		});
@@ -239,8 +286,7 @@ export class Parser extends BaseParser {
 		const first = this.parseStatement1();
 		return this.parsed("statement", {
 			type: "statement",
-			start: first.start,
-			end: first.end,
+			...spanOf(first),
 			prenexes: [], // TODO
 			statement1: first,
 		});
@@ -255,16 +301,14 @@ export class Parser extends BaseParser {
 			const statement2 = this.parseStatement2();
 			rest.push({
 				type: "ijek-statement-2",
-				start: ijek.start,
-				end: statement2.end,
+				...spanOf(ijek, statement2),
 				ijek,
 				statement2,
 			});
 		}
 		return {
 			type: "statement-1",
-			start: first.start,
-			end: rest.length > 0 ? rest[rest.length - 1].end : first.end,
+			...spanOf(first, rest),
 			first,
 			rest,
 		};
@@ -279,16 +323,14 @@ export class Parser extends BaseParser {
 			const statement2 = this.parseStatement2();
 			rest.push({
 				type: "ibo-statement-2",
-				start: ibo.start,
-				end: statement2.end,
+				...spanOf(ibo, statement2),
 				ibo,
 				statement2,
 			});
 		}
 		return {
 			type: "statement-2",
-			start: first.start,
-			end: rest.length > 0 ? rest[rest.length - 1].end : first.end,
+			...spanOf(first, rest),
 			first,
 			rest,
 		};
@@ -298,8 +340,7 @@ export class Parser extends BaseParser {
 		const sentence = this.parseSentence();
 		return {
 			type: "statement-3",
-			start: sentence.start,
-			end: sentence.end,
+			...spanOf(sentence),
 			sentence,
 		};
 	}
@@ -312,8 +353,7 @@ export class Parser extends BaseParser {
 		const selbri1 = this.parseSelbri1();
 		return this.parsed("selbri", {
 			type: "selbri",
-			start: tag?.start ?? selbri1.start,
-			end: selbri1.end,
+			...spanOf(tag, selbri1),
 			tag,
 			selbri1,
 		});
@@ -326,8 +366,7 @@ export class Parser extends BaseParser {
 
 			return {
 				type: "selbri-1-na",
-				start: na.start,
-				end: selbri.end,
+				...spanOf(na, selbri),
 				na,
 				selbri,
 			};
@@ -335,8 +374,7 @@ export class Parser extends BaseParser {
 		const selbri2 = this.parseSelbri2();
 		return {
 			type: "selbri-1-simple",
-			start: selbri2.start,
-			end: selbri2.end,
+			...spanOf(selbri2),
 			selbri2,
 		};
 	}
@@ -345,8 +383,7 @@ export class Parser extends BaseParser {
 		const selbri3 = this.parseSelbri3();
 		return {
 			type: "selbri-2",
-			start: selbri3.start,
-			end: selbri3.end,
+			...spanOf(selbri3),
 			selbri3,
 		};
 	}
@@ -368,19 +405,16 @@ export class Parser extends BaseParser {
 	private parseSelbri3(): Selbri3 {
 		const first = this.parseSelbri4();
 		const tanru: Many<Selbri4> = [first];
-		let end = first.end;
 
 		this.log("Is this selbri a tanru?", first);
 		while (this.isVerbAhead()) {
 			const next = this.parseSelbri4();
-			end = next.end;
 			tanru.push(next);
 		}
 
 		return {
 			type: "selbri-3",
-			start: first.start,
-			end,
+			...spanOf(first, tanru),
 			selbri4s: tanru,
 		};
 	}
@@ -394,16 +428,14 @@ export class Parser extends BaseParser {
 			const selbri5 = this.parseSelbri5();
 			rest.push({
 				type: "jk-selbri-5",
-				start: jk.start,
-				end: selbri5.end,
+				...spanOf(jk, selbri5),
 				jk,
 				selbri5,
 			});
 		}
 		return {
 			type: "selbri-4",
-			start: selbri5.start,
-			end: selbri5.end,
+			...spanOf(selbri5, rest),
 			first: selbri5,
 			rest,
 		};
@@ -414,8 +446,7 @@ export class Parser extends BaseParser {
 		const rest = this.tryParseJkBoSelbri5();
 		return {
 			type: "selbri-5",
-			start: selbri6.start,
-			end: rest?.end ?? selbri6.end,
+			...spanOf(selbri6, rest),
 			first: selbri6,
 			rest,
 		};
@@ -434,8 +465,7 @@ export class Parser extends BaseParser {
 		const selbri5 = this.parseSelbri5();
 		return {
 			type: "jk-bo-selbri-5",
-			start: jk.start,
-			end: bo.end,
+			...spanOf(jk, stag, bo, selbri5),
 			jk,
 			stag,
 			bo,
@@ -454,8 +484,7 @@ export class Parser extends BaseParser {
 				const selbri6 = this.parseSelbri6();
 				return {
 					type: "selbri-6-guhek",
-					start: nahe?.start ?? guhek.start,
-					end: selbri6.end,
+					...spanOf(nahe, guhek, selbri, gik, selbri6),
 					nahe,
 					guhek,
 					selbri,
@@ -470,8 +499,7 @@ export class Parser extends BaseParser {
 		const rest = this.tryParseBoSelbri6();
 		return {
 			type: "selbri-6-plain",
-			start: tanruUnit.start,
-			end: rest?.end ?? tanruUnit.end,
+			...spanOf(tanruUnit, rest),
 			tanruUnit,
 			rest,
 		};
@@ -483,8 +511,7 @@ export class Parser extends BaseParser {
 		const selbri6 = this.parseSelbri6();
 		return {
 			type: "bo-selbri-6",
-			start: bo.start,
-			end: selbri6.end,
+			...spanOf(bo, selbri6),
 			bo,
 			selbri6,
 		};
@@ -502,8 +529,7 @@ export class Parser extends BaseParser {
 		const frees = this.parseFrees();
 		return {
 			type: "guhek",
-			start: se ?? guha,
-			end: frees.length ? frees[frees.length - 1].end : (nai ?? guha),
+			...spanOf(se, guha, nai, frees),
 			se,
 			guha,
 			nai,
@@ -518,8 +544,7 @@ export class Parser extends BaseParser {
 		const frees = this.parseFrees();
 		return {
 			type: "gik",
-			start: gi,
-			end: frees.length ? frees[frees.length - 1].end : (nai ?? gi),
+			...spanOf(gi, nai, frees),
 			gi,
 			nai,
 			frees,
@@ -536,8 +561,7 @@ export class Parser extends BaseParser {
 		}
 		return {
 			type: "tanru-unit",
-			start: first.start,
-			end: rest.length > 0 ? rest[rest.length - 1].end : first.end,
+			...spanOf(first, rest),
 			first,
 			rest,
 		};
@@ -549,8 +573,7 @@ export class Parser extends BaseParser {
 		const tanruUnit1 = this.parseTanruUnit1();
 		return {
 			type: "cei-tanru-unit-1",
-			start: cei.start,
-			end: tanruUnit1.end,
+			...spanOf(cei, tanruUnit1),
 			cei,
 			tanruUnit1,
 		};
@@ -561,8 +584,7 @@ export class Parser extends BaseParser {
 		const linkargs = this.tryParseLinkArgs();
 		return {
 			type: "tanru-unit-1",
-			start: tanruUnit2.start,
-			end: linkargs?.end ?? tanruUnit2.end,
+			...spanOf(tanruUnit2, linkargs),
 			tanruUnit2,
 			linkargs,
 		};
@@ -580,8 +602,7 @@ export class Parser extends BaseParser {
 			if (!term) throw new ParseError("no term after bei");
 			links.push({
 				type: "bei-link",
-				start: bei.start,
-				end: term.end,
+				...spanOf(bei, term),
 				bei,
 				term,
 			});
@@ -590,8 +611,7 @@ export class Parser extends BaseParser {
 
 		return {
 			type: "linkargs",
-			start: be.start,
-			end: beho?.end ?? (links.length ? links[links.length - 1].end : term.end),
+			...spanOf(be, term, links, beho),
 			be,
 			term,
 			links,
@@ -616,8 +636,7 @@ export class Parser extends BaseParser {
 			const brivla = this.parseBrivlaWithFrees();
 			return {
 				type: "tu-brivla",
-				start: token.index,
-				end: token.index,
+				...spanOf(brivla),
 				brivla,
 			};
 		}
@@ -628,8 +647,7 @@ export class Parser extends BaseParser {
 			const frees = this.parseFrees();
 			return {
 				type: "tu-goha",
-				start: goha.index,
-				end: frees.length ? frees[frees.length - 1].end : (raho ?? goha.index),
+				...spanOf(goha, raho, frees),
 				goha: goha.index,
 				raho,
 				frees,
@@ -642,8 +660,7 @@ export class Parser extends BaseParser {
 			const kehe = this.tryParseCmavoWithFrees("KEhE");
 			return {
 				type: "tu-ke",
-				start: ke.start,
-				end: kehe?.end ?? selbri3.end,
+				...spanOf(ke, selbri3, kehe),
 				ke,
 				selbri3,
 				kehe,
@@ -657,8 +674,7 @@ export class Parser extends BaseParser {
 			const moi = this.tryParseCmavoWithFrees("MOI");
 			return {
 				type: "tu-me",
-				start: me.start,
-				end: moi?.end ?? mehu?.end ?? sumti?.end,
+				...spanOf(me, sumti, mehu, moi),
 				me,
 				sumti,
 				mehu,
@@ -671,8 +687,7 @@ export class Parser extends BaseParser {
 			const moi = this.tryParseCmavoWithFrees("MOI")!;
 			return {
 				type: "tu-moi",
-				start: namcu.start,
-				end: moi.end,
+				...spanOf(namcu, moi),
 				number: namcu,
 				moi,
 			};
@@ -683,8 +698,7 @@ export class Parser extends BaseParser {
 			const inner = this.parseTanruUnit2();
 			return {
 				type: "tu-se",
-				start: se.start,
-				end: inner.end,
+				...spanOf(se, inner),
 				se,
 				inner,
 			};
@@ -696,8 +710,7 @@ export class Parser extends BaseParser {
 			const inner = this.parseTanruUnit2();
 			return {
 				type: "tu-jai",
-				start: jai.start,
-				end: inner.end,
+				...spanOf(jai, inner),
 				jai,
 				tag,
 				inner,
@@ -709,8 +722,7 @@ export class Parser extends BaseParser {
 			const inner = this.parseTanruUnit2();
 			return {
 				type: "tu-nahe",
-				start: nahe.start,
-				end: inner.end,
+				...spanOf(nahe, inner),
 				nahe,
 				inner,
 			};
@@ -722,8 +734,7 @@ export class Parser extends BaseParser {
 			const kei = this.tryParseCmavoWithFrees("KEI");
 			return {
 				type: "tu-nu",
-				start: nu.start,
-				end: kei?.end ?? subsentence.end,
+				...spanOf(nu, subsentence, kei),
 				nu,
 				subsentence,
 				kei,
@@ -745,8 +756,7 @@ export class Parser extends BaseParser {
 
 		return {
 			type: "sumti",
-			start: sumti1.start,
-			end: relativeClauses?.end ?? sumti1.end,
+			...spanOf(sumti1, vuho, relativeClauses),
 			sumti1,
 			vuho,
 			relativeClauses,
@@ -758,8 +768,7 @@ export class Parser extends BaseParser {
 		const sumti2 = this.parseSumti2();
 		return {
 			type: "sumti-1",
-			start: sumti2.start,
-			end: sumti2.end,
+			...spanOf(sumti2),
 			sumti2,
 		};
 	}
@@ -768,8 +777,7 @@ export class Parser extends BaseParser {
 		const sumti3 = this.parseSumti3();
 		return {
 			type: "sumti-2",
-			start: sumti3.start,
-			end: sumti3.end,
+			...spanOf(sumti3),
 			sumti3,
 		};
 	}
@@ -778,8 +786,7 @@ export class Parser extends BaseParser {
 		const sumti4 = this.parseSumti4();
 		return {
 			type: "sumti-3",
-			start: sumti4.start,
-			end: sumti4.end,
+			...spanOf(sumti4),
 			sumti4,
 		};
 	}
@@ -788,8 +795,7 @@ export class Parser extends BaseParser {
 		const sumti5 = this.parseSumti5();
 		return {
 			type: "sumti-4",
-			start: sumti5.start,
-			end: sumti5.end,
+			...spanOf(sumti5),
 			sumti5,
 		};
 	}
@@ -802,8 +808,7 @@ export class Parser extends BaseParser {
 			const relativeClauses = this.tryParseRelativeClauses(selbri);
 			return {
 				type: "sumti-5-small",
-				start: outerQuantifier.start,
-				end: relativeClauses?.end ?? ku?.end ?? selbri.end,
+				...spanOf(outerQuantifier, selbri, ku, relativeClauses),
 				quantifier: outerQuantifier,
 				selbri,
 				ku,
@@ -814,8 +819,7 @@ export class Parser extends BaseParser {
 		const relativeClauses = this.tryParseRelativeClauses(sumti6);
 		return {
 			type: "sumti-5-large",
-			start: outerQuantifier?.start ?? sumti6.start,
-			end: relativeClauses?.end ?? sumti6.end,
+			...spanOf(outerQuantifier, sumti6, relativeClauses),
 			outerQuantifier,
 			sumti6,
 			relativeClauses,
@@ -837,8 +841,7 @@ export class Parser extends BaseParser {
 		const boi = this.tryParseCmavoWithFrees("BOI");
 		return {
 			type: "quantifier",
-			start: number.start,
-			end: boi?.end ?? number.end,
+			...spanOf(number, boi),
 			number,
 			boi,
 		};
@@ -851,8 +854,7 @@ export class Parser extends BaseParser {
 		if (!relativeClause) return undefined;
 		return {
 			type: "relative-clauses",
-			start: relativeClause.start,
-			end: relativeClause.end,
+			...spanOf(relativeClause),
 			first: relativeClause,
 		};
 	}
@@ -864,8 +866,7 @@ export class Parser extends BaseParser {
 		const kuho = this.tryParseCmavoWithFrees("KUhO");
 		return {
 			type: "relative-clause",
-			start: noi.start,
-			end: kuho?.end ?? subsentence?.end,
+			...spanOf(noi, subsentence, kuho),
 			antecedent,
 			noi,
 			subsentence,
@@ -880,7 +881,7 @@ export class Parser extends BaseParser {
 		}
 		if (token.selmaho === "KOhA") {
 			const koha = this.tryParseCmavoWithFrees("KOhA")!;
-			return { type: "sumti-6-koha", start: koha.start, end: koha.end, koha };
+			return { type: "sumti-6-koha", ...spanOf(koha), koha };
 		}
 
 		if (token.selmaho === "BY") {
@@ -888,8 +889,7 @@ export class Parser extends BaseParser {
 			const boi = this.tryParseCmavoWithFrees("BOI");
 			return {
 				type: "sumti-6-lerfu",
-				start: lerfuString.start,
-				end: boi?.end ?? lerfuString.end,
+				...spanOf(lerfuString, boi),
 				lerfuString,
 				boi,
 			};
@@ -900,8 +900,7 @@ export class Parser extends BaseParser {
 			const quote = this.tryParseCmavoWithFrees("QUOTE")!;
 			return {
 				type: "sumti-6-quote",
-				start: quote.start,
-				end: quote.end,
+				...spanOf(quote),
 				quote,
 			};
 		}
@@ -912,8 +911,7 @@ export class Parser extends BaseParser {
 			const lihu = this.tryParseCmavoWithFrees("LIhU");
 			return {
 				type: "sumti-6-lu",
-				start: lu.index,
-				end: lihu?.end ?? text.end,
+				...spanOf(lu, text, lihu),
 				lu: lu.index,
 				text,
 				lihu,
@@ -926,8 +924,7 @@ export class Parser extends BaseParser {
 			const luhu = this.tryParseCmavoWithFrees("LUhU");
 			return {
 				type: "sumti-6-lahe",
-				start: lahe.start,
-				end: luhu?.end ?? sumti.end,
+				...spanOf(lahe, sumti, luhu),
 				lahe,
 				sumti,
 				luhu,
@@ -940,8 +937,7 @@ export class Parser extends BaseParser {
 			const ku = this.tryParseCmavoWithFrees("KU");
 			return {
 				type: "sumti-6-le",
-				start: le.start,
-				end: ku?.end ?? sumtiTail.end,
+				...spanOf(le, sumtiTail, ku),
 				le,
 				sumtiTail,
 				ku,
@@ -956,8 +952,7 @@ export class Parser extends BaseParser {
 			if (names.length) {
 				return {
 					type: "sumti-6-la",
-					start: la.start,
-					end: names[names.length - 1],
+					...spanOf(la, names, frees),
 					la,
 					relativeClauses: undefined,
 					cmevlas: names,
@@ -969,8 +964,7 @@ export class Parser extends BaseParser {
 				const ku = this.tryParseCmavoWithFrees("KU");
 				return {
 					type: "sumti-6-le",
-					start: la.start,
-					end: ku?.end ?? sumtiTail.end,
+					...spanOf(la, sumtiTail, ku),
 					le: la,
 					sumtiTail,
 					ku,
@@ -1013,8 +1007,7 @@ export class Parser extends BaseParser {
 		const tail = this.parseSumtiTail1();
 		return this.parsed("sumti-tail", {
 			type: "sumti-tail",
-			start: owner?.start ?? tail.start,
-			end: tail.end,
+			...spanOf(owner, tail),
 			owner,
 			relativeClauses,
 			tail,
@@ -1026,8 +1019,7 @@ export class Parser extends BaseParser {
 		const relativeClauses = this.tryParseRelativeClauses(selbri);
 		return {
 			type: "sumti-tail-1",
-			start: selbri.start,
-			end: relativeClauses?.end ?? selbri.end,
+			...spanOf(selbri, relativeClauses),
 			selbri,
 			relativeClauses,
 		};
@@ -1087,8 +1079,7 @@ export class Parser extends BaseParser {
 		this.index = tenseParser.index;
 		return this.parsed("tag", {
 			type: "tag",
-			start: tenseModal.start,
-			end: tenseModal.end,
+			...spanOf(tenseModal),
 			first: tenseModal,
 		});
 	}
@@ -1101,8 +1092,7 @@ export class Parser extends BaseParser {
 			: this.tryParseCmavoWithFrees("KU");
 		return {
 			type: "tagged",
-			start: tagOrFa.start,
-			end: sumtiOrKu?.end ?? tagOrFa?.end,
+			...spanOf(tagOrFa, sumtiOrKu),
 			tagOrFa,
 			sumtiOrKu,
 			role: "floating",
@@ -1130,7 +1120,7 @@ export class Parser extends BaseParser {
 	private parseNaku(): Naku {
 		const na = this.nextToken()!;
 		const ku = this.tryParseCmavoWithFrees("KU")!;
-		return { type: "naku", start: na.index, end: ku.end, na: na.index, ku };
+		return { type: "naku", ...spanOf(na, ku), na: na.index, ku };
 	}
 
 	private parseBrivlaWithFrees(): BrivlaWithFrees {
@@ -1139,12 +1129,12 @@ export class Parser extends BaseParser {
 			throw new ParseError("expected brivla");
 		}
 		this.index++;
+		const frees = this.parseFrees();
 		return {
 			type: "brivla-with-frees",
+			...spanOf(token, frees),
 			brivla: token.index,
-			start: token.index,
-			end: token.index,
-			frees: this.parseFrees(),
+			frees,
 		};
 	}
 
@@ -1198,8 +1188,7 @@ export class Parser extends BaseParser {
 			head.length > 0
 				? {
 						type: "terms",
-						start: head[0].start,
-						end: head[head.length - 1].end,
+						...spanOf(head),
 						terms: head.map((term, i) =>
 							term.type === "naku"
 								? term
@@ -1218,8 +1207,7 @@ export class Parser extends BaseParser {
 
 		return this.parsed("sentence", {
 			type: "sentence",
-			start: head[0]?.start || bridiTail.start,
-			end: bridiTail.end,
+			...spanOf(head, cu, bridiTail),
 			cu,
 			bridiTail,
 			terms,
@@ -1230,8 +1218,7 @@ export class Parser extends BaseParser {
 		const sentence = this.parseSentence();
 		return {
 			type: "subsentence",
-			start: sentence.start,
-			end: sentence.end,
+			...spanOf(sentence),
 			prenexes: [], // TODO
 			sentence,
 		};
@@ -1254,8 +1241,7 @@ export class Parser extends BaseParser {
 		return {
 			bridiTail: {
 				type: "bridi-tail",
-				start: bridiTail1.start,
-				end: bridiTail1.end,
+				...spanOf(bridiTail1),
 				first: bridiTail1,
 			},
 			tertaus,
@@ -1278,8 +1264,7 @@ export class Parser extends BaseParser {
 		}
 		const bridiTail1: BridiTail1<Positional> = this.parsed("bridi-tail-1", {
 			type: "bridi-tail-1",
-			start: bridiTail2.start,
-			end: rest.length ? rest[rest.length - 1].end : bridiTail2.end,
+			...spanOf(bridiTail2, rest),
 			first: bridiTail2,
 			rest,
 		});
@@ -1310,11 +1295,7 @@ export class Parser extends BaseParser {
 				tail: bridiTail2,
 				tailTerms: this.placeTailTerms(tailTerms, [...lhs, ...tertaus])
 					.placedTerms,
-				start: gihek.start,
-				end:
-					tailTerms && tailTerms.end !== Number.NEGATIVE_INFINITY
-						? tailTerms.end
-						: bridiTail2.end,
+				...spanOf(gihek, frees, bridiTail2, tailTerms),
 			},
 		};
 	}
@@ -1328,8 +1309,7 @@ export class Parser extends BaseParser {
 			tertaus: newTertaus,
 			bridiTail2: {
 				type: "bridi-tail-2",
-				start: bridiTail.start,
-				end: bridiTail.end,
+				...spanOf(bridiTail),
 				first: bridiTail,
 			},
 		};
@@ -1414,12 +1394,10 @@ export class Parser extends BaseParser {
 
 		const placedTerms: TailTerms<Positional> = {
 			type: "tail-terms",
-			start: tailTerms.start,
-			end: tailTerms.end,
+			...spanOf(tailTerms),
 			terms: {
 				type: "terms",
-				start: tailTerms.start,
-				end: tailTerms.end,
+				...spanOf(placed),
 				terms: placed,
 			},
 			vau: tailTerms.vau,
@@ -1443,8 +1421,7 @@ export class Parser extends BaseParser {
 			tertaus: newTertaus,
 			bridiTail: {
 				type: "bridi-tail-3",
-				start: selbri.start,
-				end: placedTerms.end,
+				...spanOf(selbri, placedTerms),
 				selbri,
 				tailTerms: placedTerms,
 			},
@@ -1457,10 +1434,7 @@ export class Parser extends BaseParser {
 		}
 		const tanru = selbri.selbri1.selbri2.selbri3.selbri4s;
 		const tertau = tanru[tanru.length - 1];
-		return {
-			start: tertau.start,
-			end: tertau.end,
-		};
+		return spanOf(tertau);
 	}
 
 	private tryParseGihek(): Gihek | undefined {
@@ -1475,8 +1449,7 @@ export class Parser extends BaseParser {
 		}
 		return {
 			type: "gihek",
-			start: na ?? se ?? giha,
-			end: nai ?? giha,
+			...spanOf(na, se, giha, nai),
 			na,
 			se,
 			giha,
@@ -1489,8 +1462,7 @@ export class Parser extends BaseParser {
 		const vau = this.tryParseCmavoWithFrees("VAU");
 		return {
 			type: "tail-terms",
-			start: terms?.start ?? vau?.start ?? Number.POSITIVE_INFINITY,
-			end: vau?.end ?? terms?.end ?? Number.NEGATIVE_INFINITY,
+			...spanOf(terms, vau),
 			terms,
 			vau,
 		};
@@ -1498,15 +1470,10 @@ export class Parser extends BaseParser {
 
 	private tryParseTerms(): Terms<Floating> | undefined {
 		const terms: Term<Floating>[] = [];
-		let start = Number.POSITIVE_INFINITY;
-		let end = Number.NEGATIVE_INFINITY;
-
 		while (true) {
 			const term = this.tryParseTerm();
 			if (!term) break;
 			this.log(`Parsed term "${this.showSpan(term)}" in bridi-tail`, term);
-			if (start === Number.POSITIVE_INFINITY) start = term.start;
-			end = term.end;
 			terms.push(term);
 		}
 
@@ -1514,9 +1481,165 @@ export class Parser extends BaseParser {
 
 		return {
 			type: "terms",
-			start,
-			end,
+			...spanOf(terms),
 			terms,
+		};
+	}
+
+	protected tryParseCmavoWithFrees(
+		selmaho: Selmaho,
+	): CmavoWithFrees | undefined {
+		const token = this.peekToken();
+		if (token && token.selmaho === selmaho) {
+			this.index++;
+			const frees = this.parseFrees();
+			return {
+				...spanOf(token, frees),
+				type: "cmavo-with-frees",
+				cmavo: token.index,
+				frees,
+			};
+		}
+		return undefined;
+	}
+
+	protected tryParseIndicator(): Indicator | undefined {
+		const token = this.peekToken();
+		switch (token?.selmaho) {
+			case "Y":
+			case "DAhO":
+			case "FUhO":
+				this.index++;
+				return {
+					type: "indicator",
+					...spanOf(token),
+					indicator: token.index,
+					nai: undefined,
+				};
+			case "UI":
+			case "CAI": {
+				this.index++;
+				const nai = this.tryParseCmavo("NAI");
+				return {
+					type: "indicator",
+					...spanOf(token, nai),
+					indicator: token.index,
+					nai,
+				};
+			}
+			default:
+				return undefined;
+		}
+	}
+
+	protected tryParseFree(): Free | undefined {
+		const token = this.peekToken();
+		const indicator = this.tryParseIndicator();
+		if (indicator) return indicator;
+
+		// TODO: sei, vocative, mai, to
+
+		if (token?.selmaho === "XI") {
+			const xi = this.tryParseCmavoWithFrees("XI")!;
+			const ordinal = this.tryParseLerfuString() ?? this.parseNamcu();
+			const boi = this.tryParseCmavo("BOI");
+			return {
+				type: "free-xi",
+				...spanOf(xi, ordinal, boi),
+				xi,
+				ordinal,
+				boi,
+			};
+		}
+		return undefined;
+	}
+
+	protected parseFrees(): Free[] {
+		const frees: Free[] = [];
+		while (true) {
+			const free = this.tryParseFree();
+			if (!free) break;
+			frees.push(free);
+		}
+		return frees;
+	}
+
+	protected tryParseJoikJek(): JoikJek | undefined {
+		const jk = this.tryParseJoik() ?? this.tryParseJek();
+		if (!jk) return undefined;
+		const frees = this.parseFrees();
+		return {
+			type: "joik-jek",
+			jk,
+			frees,
+			...spanOf(jk, frees),
+		};
+	}
+
+	protected tryParseJoik(): Joik | undefined {
+		const backtrack = this.index;
+		const gaho1 = this.tryParseCmavo("GAhO");
+		const se = this.tryParseCmavo("SE");
+		const token = this.nextToken();
+		if (!token || (token.selmaho !== "JOI" && token.selmaho !== "BIhI")) {
+			this.index = backtrack;
+			return undefined;
+		}
+		const nai = this.tryParseCmavo("NAI");
+		const gaho2 = this.tryParseCmavo("GAhO");
+		if (
+			token.selmaho === "JOI" &&
+			(gaho1 !== undefined || gaho2 !== undefined)
+		) {
+			this.index = backtrack;
+			return undefined;
+		}
+		return {
+			type: "joik",
+			gaho1,
+			se,
+			joi: token.index,
+			nai,
+			gaho2,
+			...spanOf(gaho1, se, token, nai, gaho2),
+		};
+	}
+
+	protected tryParseJek(): Jek | undefined {
+		const backtrack = this.index;
+		const na = this.tryParseCmavo("NA");
+		const se = this.tryParseCmavo("SE");
+		const ja = this.tryParseCmavo("JA");
+		if (ja === undefined) {
+			this.index = backtrack;
+			return undefined;
+		}
+		const nai = this.tryParseCmavo("NAI");
+
+		return {
+			type: "jek",
+			na,
+			se,
+			ja,
+			nai,
+			...spanOf(na, se, ja, nai),
+		};
+	}
+
+	protected tryParseIjek(): Ijek | undefined {
+		const backtrack = this.index;
+		const i = this.tryParseCmavo("I");
+		if (i === undefined) return undefined;
+		const jek = this.tryParseJoikJek();
+		if (jek === undefined) {
+			this.index = backtrack;
+			return undefined;
+		}
+		return {
+			type: "ijek",
+			i,
+			jek,
+			...spanOf(i, jek),
 		};
 	}
 }

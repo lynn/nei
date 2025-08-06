@@ -1,11 +1,5 @@
 import { ParseError } from "./error";
 import type {
-	CmavoWithFrees,
-	Free,
-	Ijek,
-	Jek,
-	Joik,
-	JoikJek,
 	LerfuString,
 	LerfuWord,
 	Namcu,
@@ -97,38 +91,6 @@ export class BaseParser {
 		return cmavos;
 	}
 
-	protected tryParseCmavoWithFrees(
-		selmaho: Selmaho,
-	): CmavoWithFrees | undefined {
-		const token = this.peekToken();
-		if (token && token.selmaho === selmaho) {
-			this.index++;
-			const frees = this.parseFrees();
-			return {
-				start: token.index,
-				end: frees.at(-1)?.end ?? token.index,
-				type: "cmavo-with-frees",
-				cmavo: token.index,
-				frees,
-			};
-		}
-		return undefined;
-	}
-
-	protected parseFrees(): Free[] {
-		const frees: Free[] = [];
-		while (true) {
-			const token = this.peekToken();
-			if (token?.selmaho === "UI" || token?.selmaho === "CAI") {
-				frees.push({ type: "free", start: token.index, end: token.index });
-				this.index++;
-			} else {
-				break;
-			}
-		}
-		return frees;
-	}
-
 	protected tryParseNamcu(): Namcu | undefined {
 		if (this.peekToken()?.selmaho === "PA") {
 			return this.parseNamcu();
@@ -188,89 +150,6 @@ export class BaseParser {
 			end: rest.length ? rest[rest.length - 1].end : first.end,
 			first,
 			rest,
-		};
-	}
-
-	protected tryParseJoikJek(): JoikJek | undefined {
-		const jk = this.tryParseJoik() ?? this.tryParseJek();
-		if (!jk) return undefined;
-		const frees = this.parseFrees();
-		return {
-			type: "joik-jek",
-			jk,
-			frees,
-			start: jk.start,
-			end: frees.length ? frees[frees.length - 1].end : jk.end,
-		};
-	}
-
-	protected tryParseJoik(): Joik | undefined {
-		const backtrack = this.index;
-		const gaho1 = this.tryParseCmavo("GAhO");
-		const se = this.tryParseCmavo("SE");
-		const token = this.nextToken();
-		if (!token || (token.selmaho !== "JOI" && token.selmaho !== "BIhI")) {
-			this.index = backtrack;
-			return undefined;
-		}
-		const nai = this.tryParseCmavo("NAI");
-		const gaho2 = this.tryParseCmavo("GAhO");
-		if (
-			token.selmaho === "JOI" &&
-			(gaho1 !== undefined || gaho2 !== undefined)
-		) {
-			this.index = backtrack;
-			return undefined;
-		}
-		return {
-			type: "joik",
-			gaho1,
-			se,
-			joi: token.index,
-			nai,
-			gaho2,
-			start: gaho1 ?? se ?? token?.index,
-			end: gaho2 ?? nai ?? token?.index,
-		};
-	}
-
-	protected tryParseJek(): Jek | undefined {
-		const backtrack = this.index;
-		const na = this.tryParseCmavo("NA");
-		const se = this.tryParseCmavo("SE");
-		const ja = this.tryParseCmavo("JA");
-		if (ja === undefined) {
-			this.index = backtrack;
-			return undefined;
-		}
-		const nai = this.tryParseCmavo("NAI");
-
-		return {
-			type: "jek",
-			na,
-			se,
-			ja,
-			nai,
-			start: na ?? se ?? ja,
-			end: nai ?? ja,
-		};
-	}
-
-	protected tryParseIjek(): Ijek | undefined {
-		const backtrack = this.index;
-		const i = this.tryParseCmavo("I");
-		if (i === undefined) return undefined;
-		const jek = this.tryParseJoikJek();
-		if (jek === undefined) {
-			this.index = backtrack;
-			return undefined;
-		}
-		return {
-			type: "ijek",
-			i,
-			jek,
-			start: i,
-			end: jek.end,
 		};
 	}
 }

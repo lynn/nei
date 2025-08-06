@@ -35,8 +35,14 @@ export interface Text extends Span {
 export interface Pretext extends Span {
 	type: "pretext";
 	nais: TokenIndex[];
-	cmevlas: TokenIndex[];
+	cmene: Cmene | undefined;
+	frees: Free[];
 	joikjek: JoikJek | undefined;
+}
+
+export interface Cmene extends Span {
+	type: "cmene";
+	cmevlas: TokenIndex[];
 	frees: Free[];
 }
 
@@ -961,9 +967,76 @@ export interface IpCmavo extends Span {
 ///     | DAhO
 ///     | FUhO
 
-export interface Free extends Span {
-	type: "free";
-	// TODO: frees
+export type Free =
+	| Indicator // slight simplification
+	| FreeSei
+	| FreeVocative
+	| FreeMai
+	| FreeTo
+	| FreeXi; // TODO: FreeSoi
+
+export interface Indicator extends Span {
+	type: "indicator";
+	indicator: TokenIndex;
+	nai: TokenIndex | undefined;
+}
+
+export interface FreeSei extends Span {
+	type: "free-sei";
+	sei: CmavoWithFrees;
+	terms: Terms<Positional>;
+	cu: CmavoWithFrees | undefined;
+	selbri: Selbri;
+	sehu: TokenIndex | undefined;
+}
+
+export interface FreeSoi extends Span {
+	type: "free-soi";
+	soi: CmavoWithFrees;
+	sumti: Sumti<Floating>;
+	otherSumti: Sumti<Floating> | undefined;
+	sehu: TokenIndex | undefined;
+}
+
+export interface FreeVocative extends Span {
+	type: "free-vocative";
+	vocative: Vocative;
+	relativeClauses: RelativeClauses | undefined;
+	argument: Selbri | Sumti<Floating> | Cmene;
+	relativeClauses2: RelativeClauses | undefined;
+	dohu: TokenIndex | undefined;
+}
+
+export interface Vocative extends Span {
+	type: "vocative";
+	coinais: Coinai[];
+	doi: TokenIndex | undefined;
+}
+
+export interface Coinai extends Span {
+	type: "coinai";
+	coi: TokenIndex;
+	nai: TokenIndex | undefined;
+}
+
+export interface FreeMai extends Span {
+	type: "free-mai";
+	ordinal: Namcu | LerfuString;
+	mai: TokenIndex;
+}
+
+export interface FreeTo extends Span {
+	type: "free-to";
+	to: TokenIndex;
+	text: Text;
+	toi: TokenIndex | undefined;
+}
+
+export interface FreeXi extends Span {
+	type: "free-xi";
+	xi: CmavoWithFrees;
+	ordinal: Namcu | LerfuString;
+	boi: TokenIndex | undefined;
 }
 
 export interface CmavoWithFrees extends Span {
