@@ -906,6 +906,17 @@ export class Parser extends BaseParser {
 			};
 		}
 
+		if (token.selmaho === "LOhU") {
+			// The tokenizer already merged LOhU-text-LEhU into one token.
+			const lohu = this.tryParseCmavoWithFrees("LOhU")!;
+			return {
+				type: "sumti-6-lohu",
+				start: lohu.start,
+				end: lohu.end,
+				lohu,
+			};
+		}
+
 		if (token.selmaho === "LAhE") {
 			const lahe = this.tryParseCmavoWithFrees("LAhE")!;
 			const sumti = this.parseSumti();

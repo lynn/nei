@@ -321,7 +321,8 @@ export type Sumti6 =
 	| Sumti6La
 	| Sumti6Le
 	| Sumti6Li
-	| Sumti6Zo; // TODO: more quotes
+	| Sumti6Zo
+	| Sumti6Lohu; // TODO: more quotes
 
 export interface Sumti6Lahe extends Span {
 	type: "sumti-6-lahe";
@@ -377,6 +378,11 @@ export interface Sumti6Zo extends Span {
 	type: "sumti-6-zo";
 	// The tokenizer already merged the ZO with the next word.
 	zo: CmavoWithFrees;
+}
+
+export interface Sumti6Lohu extends Span {
+	type: "sumti-6-lohu";
+	lohu: CmavoWithFrees;
 }
 
 /// sumti-tail = [sumti-6 [relative-clauses]] sumti-tail-1 | relative-clauses sumti-tail-1

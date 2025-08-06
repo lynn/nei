@@ -46,6 +46,7 @@ export class Tokenizer {
 	private tokens: Token[] = [];
 	private erased: string[] = [];
 	private lastZo: boolean = false;
+	private lohuSource: string[] | undefined = undefined;
 
 	private push(
 		column: [number, number],
@@ -64,6 +65,24 @@ export class Tokenizer {
 				selmaho: "ZO",
 			});
 			this.lastZo = false;
+		} else if (lexeme === "lo'u") {
+			this.lohuSource = [sourceText];
+		} else if (this.lohuSource) {
+			this.lohuSource.push(sourceText);
+
+			if (lexeme === "le'u") {
+				this.tokens.push({
+					index: this.tokens.length,
+					line: this.lineIndex,
+					column,
+					erased: [...this.erased],
+					sourceText: this.lohuSource.join(" "),
+					lexeme: "lo'u",
+					selmaho: "LOhU",
+				});
+				this.lohuSource = undefined;
+				this.erased = [];
+			}
 		} else if (lexeme === "si") {
 			this.erased = [
 				this.tokens.pop()?.sourceText ?? "?",
