@@ -2,9 +2,9 @@
 
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
+import { shortDescriptions } from "./gloss";
 import type * as G from "./grammar";
 import { isTenseSelmaho, type Token } from "./tokenize";
-import { shortDescriptions } from "./gloss";
 
 export const TokenContext = createContext<Token[]>([]);
 
@@ -559,7 +559,7 @@ export function ExplainRoleIn({ role }: { role: G.Role }) {
 	// unwrap SE
 	let si = 0,
 		sx = role.xIndex;
-	while (true) {
+	while (typeof role.xIndex === "number") {
 		if (lexemes[si] === "se") {
 			sx = sx === 1 ? 2 : sx === 2 ? 1 : sx;
 		} else if (lexemes[si] === "te") {

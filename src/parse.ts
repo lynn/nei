@@ -1165,7 +1165,12 @@ export class Parser extends BaseParser {
 			}
 		}
 		const cu = head.length ? this.tryParseCmavoWithFrees("CU") : undefined;
-		if (!this.isVerbAhead() && !this.isTaggedVerbAhead() && !cu && allowFragment) {
+		if (
+			!this.isVerbAhead() &&
+			!this.isTaggedVerbAhead() &&
+			!cu &&
+			allowFragment
+		) {
 			return {
 				type: "fragment-terms",
 				...spanOf(head),
@@ -1643,8 +1648,7 @@ export class Parser extends BaseParser {
 		const frees = this.parseFrees();
 		return {
 			type: "tense-modal",
-			start: simpleTenseModal.start,
-			end: simpleTenseModal.end,
+			...spanOf(simpleTenseModal),
 			first: simpleTenseModal,
 			frees,
 		};
@@ -1655,8 +1659,7 @@ export class Parser extends BaseParser {
 			const kiOrCuhe = this.nextToken()!;
 			return {
 				type: "stm-cmavo",
-				start: kiOrCuhe.index,
-				end: kiOrCuhe.index,
+				...spanOf(kiOrCuhe),
 				kiOrCuhe: kiOrCuhe.index,
 			};
 		}
@@ -1679,8 +1682,7 @@ export class Parser extends BaseParser {
 		const ki = this.tryParseCmavo("KI");
 		return {
 			type: "stm-bai",
-			start: nahe ?? se ?? bai,
-			end: ki ?? nai ?? bai,
+			...spanOf(nahe, se, bai, nai, ki),
 			nahe,
 			se,
 			bai,
@@ -1703,8 +1705,7 @@ export class Parser extends BaseParser {
 
 		return {
 			type: "stm-tense",
-			start: (nahe ?? tense?.start ?? caha)!,
-			end: (ki ?? caha ?? tense?.end)!,
+			...spanOf(nahe, tense, caha, ki),
 			nahe,
 			tense,
 			caha,
@@ -1718,8 +1719,7 @@ export class Parser extends BaseParser {
 		const space = this.tryParseSpace();
 		return {
 			type: "timespace",
-			start: time.start,
-			end: space?.end ?? time.end,
+			...spanOf(time, space),
 			time,
 			space,
 		};
@@ -1731,8 +1731,7 @@ export class Parser extends BaseParser {
 		const time = this.tryParseTime();
 		return {
 			type: "spacetime",
-			start: space.start,
-			end: time?.end ?? space.end,
+			...spanOf(space, time),
 			space,
 			time,
 		};
@@ -1796,8 +1795,7 @@ export class Parser extends BaseParser {
 		const zi = this.tryParseCmavo("ZI");
 		return {
 			type: "time-offset",
-			start: pu,
-			end: zi ?? nai ?? pu,
+			...spanOf(pu, nai, zi),
 			pu,
 			nai,
 			zi,
@@ -1810,8 +1808,7 @@ export class Parser extends BaseParser {
 			const nai = this.tryParseCmavo("NAI");
 			return {
 				type: "interval-property-cmavo",
-				start: taheOrZaho,
-				end: nai ?? taheOrZaho,
+				...spanOf(taheOrZaho, nai),
 				taheOrZaho,
 				nai,
 			};
@@ -1828,8 +1825,7 @@ export class Parser extends BaseParser {
 		const nai = this.tryParseCmavo("NAI");
 		return {
 			type: "interval-property-roi",
-			start: number.start,
-			end: nai ?? roi,
+			...spanOf(number, roi, nai),
 			number,
 			roi,
 			nai,
@@ -1843,8 +1839,7 @@ export class Parser extends BaseParser {
 		const nai = pu ? this.tryParseCmavo("NAI") : undefined;
 		return {
 			type: "zehapu",
-			start: zeha,
-			end: nai ?? pu ?? zeha,
+			...spanOf(zeha, pu, nai),
 			zeha,
 			pu,
 			nai,
@@ -1910,8 +1905,7 @@ export class Parser extends BaseParser {
 		}
 		return {
 			type: "motion",
-			start: mohi,
-			end: spaceOffset?.end ?? mohi,
+			...spanOf(mohi, spaceOffset),
 			mohi,
 			spaceOffset,
 		};
@@ -1924,8 +1918,7 @@ export class Parser extends BaseParser {
 		const va = this.tryParseCmavo("VA");
 		return {
 			type: "space-offset",
-			start: faha,
-			end: va ?? nai ?? faha,
+			...spanOf(faha, nai, va),
 			faha,
 			nai,
 			va,
@@ -1944,10 +1937,7 @@ export class Parser extends BaseParser {
 		if (vxha !== undefined && spaceIntProps.length) {
 			return {
 				type: "space-interval",
-				start: vxha.start,
-				end: spaceIntProps.length
-					? spaceIntProps[spaceIntProps.length - 1].end
-					: vxha.end,
+				...spanOf(vxha, spaceIntProps),
 				vxha,
 				spaceIntProps,
 			};
@@ -1957,14 +1947,12 @@ export class Parser extends BaseParser {
 	private tryParseVxha(): Vxha | undefined {
 		const veha = this.tryParseCmavo("VEhA");
 		const viha = this.tryParseCmavo("VIhA");
-		const first = veha ?? viha;
-		if (first === undefined) return undefined;
+		if ((veha ?? viha) === undefined) return undefined;
 		const faha = this.tryParseCmavo("FAhA");
 		const nai = faha ? this.tryParseCmavo("NAI") : undefined;
 		return {
 			type: "vxha",
-			start: first,
-			end: nai ?? faha ?? viha ?? first,
+			...spanOf(veha, viha, faha, nai),
 			veha,
 			viha,
 			faha,
