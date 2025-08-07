@@ -10,8 +10,10 @@ export class ParseError extends Error {
 }
 
 export class Unsupported extends Error {
-	constructor(explanation: string) {
+	readonly site?: TokenIndex;
+	constructor(explanation: string, site?: TokenIndex) {
 		super(explanation);
 		this.name = "Unsupported";
+		this.site = site;
 	}
 }

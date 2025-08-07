@@ -4,14 +4,16 @@ import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import type * as G from "./grammar";
 import { isTenseSelmaho, type Token } from "./tokenize";
+import { shortDescriptions } from "./gloss";
 
 export const TokenContext = createContext<Token[]>([]);
 
 export function ShowToken({ token }: { token: Token }) {
+	const gloss = shortDescriptions[token.lexeme];
 	return (
-		<div className="inline-flex flex-col">
+		<div className="inline-flex flex-col hover:bg-black/10">
 			<pre
-				class="inline-block tracking-tighter hover:bg-black/10"
+				class="inline-block tracking-tighter"
 				style={{
 					color:
 						token.lexeme === "bisladru"
@@ -28,6 +30,7 @@ export function ShowToken({ token }: { token: Token }) {
 				)}
 				{token.sourceText}
 			</pre>
+			<span className="text-xs italic font-light">{gloss || "\u00a0"}</span>
 		</div>
 	);
 }
@@ -73,7 +76,7 @@ export function TextBox({
 		<div className="row">
 			{text.pretext && <PretextBox pretext={text.pretext} />}
 			<Text1Box text1={text.text1} />
-			{remainder && (
+			{remainder !== undefined && (
 				<div className="bg-red-200 px-2">
 					<ShowSpan span={remainder} />
 				</div>
@@ -135,7 +138,11 @@ export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 
 export function ItemBox({ item }: { item: G.Item }) {
 	return (
-		<div className="row box bg-gray-50 outline-none">
+		<div
+			className={`row box bg-gray-50 ${
+				item.tem.type === "statement" ? "" : "hatch"
+			} outline-none`}
+		>
 			{item.i && (
 				<div className="box col bg-green-100">
 					<b>separator</b>
@@ -152,7 +159,7 @@ export function ItemBox({ item }: { item: G.Item }) {
 }
 
 export function FragmentBox({ fragment }: { fragment: G.Fragment }) {
-	return <SumtiBox sumti={fragment} />;
+	return <TermsBox terms={fragment.terms} />;
 }
 
 export function StatementBox({ statement }: { statement: G.Statement }) {

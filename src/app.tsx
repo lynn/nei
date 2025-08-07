@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import "./app.css";
 import { TextBox, TokenContext } from "./boxes";
 import { type ParseResult, type Snapshot, parse } from "./parse";
@@ -65,31 +65,28 @@ export function ShowSnapshots({
 
 export function ShowParseResult({ output }: { output: ParseResult }) {
 	if (!output.success) {
-		if ("error" in output) {
-			return <div class="parse-error">Error: {output.error.message}</div>;
-		} else {
-			return (
-				<div class="px-4 py-2">
-					<div class="parse-result flex flex-col gap-2">
-						The input could not be parsed.
+		return (
+			<div class="px-4 py-2">
+				<div class="parse-result flex flex-col gap-2">
+					{output.error.message}
+					{output.consumed && (
 						<TokenContext.Provider value={output.tokens}>
 							<TextBox text={output.consumed} remainder={output.remainder} />
 						</TokenContext.Provider>
-						<ShowSnapshots
-							tokens={output.tokens}
-							snapshots={output.snapshots}
-						/>
-					</div>
+					)}
+					<ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} />
 				</div>
-			);
-		}
+			</div>
+		);
 	}
 	return (
-		<div class="parse-result">
-			<TokenContext.Provider value={output.tokens}>
-				<TextBox text={output.text} />
-			</TokenContext.Provider>
-			<ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} />
+		<div class="px-4 py-2">
+			<div class="parse-result">
+				<TokenContext.Provider value={output.tokens}>
+					<TextBox text={output.text} />
+				</TokenContext.Provider>
+				<ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} />
+			</div>
 		</div>
 	);
 }
@@ -109,6 +106,10 @@ export function Io(props: IoProps) {
 
 export function App() {
 	const [ios, setIos] = useState<IoProps[]>([]);
+	const [input, setInput] = useState(
+		".i ji'a ma prali fi lo cukta poi vasru no lo pixra",
+	);
+	const output = useMemo(() => parse(new Tokenizer().tokenize(input)), [input]);
 
 	return (
 		<div class="flex flex-col min-h-screen p-4">
@@ -125,16 +126,16 @@ export function App() {
 					class="border border-gray-300 rounded p-2 w-full"
 					autofocus
 					type="text"
-					value=".i ji'a ma prali fi lo cukta poi vasru no lo pixra"
-					onKeyPress={(e) => {
+					value={input}
+					onInput={(e) => setInput(e.currentTarget.value)}
+					onKeyDown={(e) => {
 						if (e.key === "Enter") {
+							e.preventDefault();
 							const input = e.currentTarget.value;
 							if (input.trim() === "") return;
-							e.currentTarget.value = "";
+							setInput("");
 							const tokens = new Tokenizer().tokenize(input);
-							console.log(tokens);
 							const output = parse(tokens);
-							console.log(output);
 							setIos((prev) => [...prev, { input, output }]);
 							// Scroll to the bottom
 							window.scrollTo({
@@ -144,6 +145,7 @@ export function App() {
 					}}
 				/>
 			</div>
+			<ShowParseResult output={output} />
 		</div>
 	);
 }

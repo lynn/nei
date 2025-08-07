@@ -1,23 +1,27 @@
 import { expect, test } from "vitest";
-import { Parser } from "./parse";
+import { parse } from "./parse";
 import { Tokenizer } from "./tokenize";
 
-test("parses Lojban", () => {
-	const good = [
-		".i mi gerku",
-		`.i ze'a lo slolecydo'i mi'a surla sakli .i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre troci lo nu gidva co za'akli`,
-	];
-	const bad = [".i gerku lo"];
+test.each([
+	".ua",
+	"mi",
+	".i mi gerku",
+	".ua ni'o ni'o broda ni'o brode .i brodo .ije broda brode",
+	`.i ze'a lo slolecydo'i mi'a surla sakli`,
+	`.i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre troci lo nu gidva`,
+])("parses %s", (text) => {
+	const tokens = new Tokenizer().tokenize(text);
+	const result = parse(tokens);
+	expect(result.success).toBe(true);
+});
 
-	for (const text of good) {
-		const tokens = new Tokenizer().tokenize(text);
-		const parser = new Parser(tokens);
-		expect(parser.parseText()).toBeTruthy();
-	}
-
-	for (const text of bad) {
-		const tokens = new Tokenizer().tokenize(text);
-		const parser = new Parser(tokens);
-		expect(() => parser.parseText()).toThrow();
-	}
+test.each([
+	".i gerku lo",
+	".i lo lo prenu cu klama",
+	"mi klama do klama",
+	"kei mi klama",
+])("fails to parse %s", (text) => {
+	const tokens = new Tokenizer().tokenize(text);
+	const result = parse(tokens);
+	expect(result.success).toBe(false);
 });

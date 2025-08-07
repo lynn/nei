@@ -251,12 +251,14 @@ export class Parser extends BaseParser {
 	}
 
 	private parseTem(): Statement | Fragment {
-		return this.parseStatement();
+		return this.parseStatement(true);
 	}
 
-	private parseStatement(): Statement {
+	private parseStatement(allowFragment: boolean): Statement | Fragment {
 		this.begin("statement");
-		const first = this.parseStatement1();
+		const first = this.parseStatement1(allowFragment);
+		if (first.type === "fragment-terms") return first;
+
 		return this.parsed("statement", {
 			type: "statement",
 			...spanOf(first),
@@ -265,13 +267,16 @@ export class Parser extends BaseParser {
 		});
 	}
 
-	private parseStatement1(): Statement1 {
-		const first = this.parseStatement2();
+	private parseStatement1(allowFragment: false): Statement1;
+	private parseStatement1(allowFragment: boolean): Statement1 | Fragment;
+	private parseStatement1(allowFragment: boolean): Statement1 | Fragment {
+		const first = this.parseStatement2(allowFragment);
+		if (first.type === "fragment-terms") return first;
 		const rest: IjekStatement2[] = [];
 		while (true) {
 			const ijek = this.tryParseIjek();
 			if (!ijek) break;
-			const statement2 = this.parseStatement2();
+			const statement2 = this.parseStatement2(false);
 			rest.push({
 				type: "ijek-statement-2",
 				...spanOf(ijek, statement2),
@@ -287,13 +292,17 @@ export class Parser extends BaseParser {
 		};
 	}
 
-	private parseStatement2(): Statement2 {
-		const first = this.parseStatement3();
+	private parseStatement2(allowFragment: false): Statement2;
+	private parseStatement2(allowFragment: boolean): Statement2 | Fragment;
+	private parseStatement2(allowFragment: boolean): Statement2 | Fragment {
+		const first = this.parseStatement3(allowFragment);
+		if (first.type === "fragment-terms") return first;
+
 		const rest: IboStatement2[] = [];
 		while (true) {
 			const ibo = this.tryParseIbo();
 			if (!ibo) break;
-			const statement2 = this.parseStatement2();
+			const statement2 = this.parseStatement2(false);
 			rest.push({
 				type: "ibo-statement-2",
 				...spanOf(ibo, statement2),
@@ -309,8 +318,9 @@ export class Parser extends BaseParser {
 		};
 	}
 
-	private parseStatement3(): Statement3 {
-		const sentence = this.parseSentence();
+	private parseStatement3(allowFragment: boolean): Statement3 | Fragment {
+		const sentence = this.parseSentence(allowFragment);
+		if (sentence.type === "fragment-terms") return sentence;
 		return {
 			type: "statement-3",
 			...spanOf(sentence),
@@ -603,7 +613,8 @@ export class Parser extends BaseParser {
 
 	private parseTanruUnit2(): TanruUnit2 {
 		const token = this.peekToken();
-		if (!token) throw new ParseError("expected tanru-unit, got eof");
+		if (!token)
+			throw new ParseError("expected tanru-unit, got eof", this.index);
 
 		if (token?.selmaho === "BRIVLA") {
 			const brivla = this.parseBrivlaWithFrees();
@@ -714,7 +725,10 @@ export class Parser extends BaseParser {
 			};
 		}
 
-		throw new Unsupported(`Unsupported tanru-unit-2: ${token?.selmaho}`);
+		throw new Unsupported(
+			`Unsupported tanru-unit-2: ${token?.selmaho}`,
+			this.index,
+		);
 	}
 
 	private parseSumti(): Sumti<Floating> {
@@ -724,7 +738,7 @@ export class Parser extends BaseParser {
 			? this.tryParseRelativeClauses(sumti1)
 			: undefined;
 		if (vuho && relativeClauses === undefined) {
-			throw new ParseError("Expected relative clause after vu'o");
+			throw new ParseError("Expected relative clause after vu'o", this.index);
 		}
 
 		return {
@@ -945,7 +959,7 @@ export class Parser extends BaseParser {
 			}
 		}
 
-		throw new Unsupported(`Unsupported sumti6 ${token.selmaho}`);
+		throw new Unsupported(`Unsupported sumti6 ${token.selmaho}`, this.index);
 	}
 
 	private zeroOrMore(selmaho: Selmaho): TokenIndex[] {
@@ -1118,7 +1132,9 @@ export class Parser extends BaseParser {
 		);
 	}
 
-	private parseSentence(): Sentence {
+	private parseSentence(allowFragment: false): Sentence;
+	private parseSentence(allowFragment: boolean): Sentence | Fragment;
+	private parseSentence(allowFragment: boolean): Sentence | Fragment {
 		this.begin("sentence");
 		const head: Term<Floating>[] = [];
 		const headState: TerbriState = { x: 1, filled: 0n };
@@ -1149,6 +1165,14 @@ export class Parser extends BaseParser {
 			}
 		}
 		const cu = head.length ? this.tryParseCmavoWithFrees("CU") : undefined;
+		if (!this.isVerbAhead() && !this.isTaggedVerbAhead() && !cu && allowFragment) {
+			return {
+				type: "fragment-terms",
+				...spanOf(head),
+				terms: { type: "terms", ...spanOf(head), terms: head },
+			};
+		}
+
 		if (headState.x === 1) {
 			// After verb, skip to the x2:
 			headState.x = 2;
@@ -1186,7 +1210,7 @@ export class Parser extends BaseParser {
 	}
 
 	private parseSubsentence(): Subsentence {
-		const sentence = this.parseSentence();
+		const sentence = this.parseSentence(false);
 		return {
 			type: "subsentence",
 			...spanOf(sentence),
@@ -1967,8 +1991,13 @@ export class Parser extends BaseParser {
 
 export type ParseResult = (
 	| { success: true; tokens: Token[]; text: Text }
-	| { success: false; error: ParseError }
-	| { success: false; tokens: Token[]; consumed: Text; remainder: Span }
+	| {
+			success: false;
+			error: ParseError;
+			tokens: Token[];
+			consumed?: Text;
+			remainder?: Span;
+	  }
 ) & { snapshots: Snapshot[] };
 
 export function parse(tokens: Token[]): ParseResult {
@@ -1982,6 +2011,7 @@ export function parse(tokens: Token[]): ParseResult {
 			return {
 				success: false,
 				tokens,
+				error: new ParseError("incomplete parse"),
 				consumed: text,
 				snapshots: parser.snapshots,
 				remainder: { start: parser.index, end: tokens.length - 1 },
@@ -1990,7 +2020,26 @@ export function parse(tokens: Token[]): ParseResult {
 	} catch (error) {
 		console.error(error);
 		if (error instanceof ParseError || error instanceof Unsupported) {
-			return { success: false, error, snapshots: parser.snapshots };
+			if ("site" in error && error.site !== undefined) {
+				// Try to show a partial parse... silly, but it's better than nothing.
+				for (let i = 0; i < 8; i++) {
+					try {
+						const partialTokens = tokens.slice(0, error.site - i);
+						const partialText = new Parser(partialTokens).parseText();
+						return {
+							success: false,
+							error,
+							tokens,
+							consumed: partialText,
+							remainder: { start: error.site - i, end: tokens.length - 1 },
+							snapshots: parser.snapshots,
+						};
+					} catch (_error) {
+						// Oh, well.
+					}
+				}
+			}
+			return { success: false, error, tokens, snapshots: parser.snapshots };
 		} else {
 			throw error; // Re-throw unexpected errors
 		}

@@ -146,7 +146,12 @@ export interface Statement3 extends Span {
 ///   | links
 ///   | linkargs
 
-export type Fragment = Sumti<Floating>; // TODO: others
+export type Fragment = FragmentTerms; // TODO: others
+
+export interface FragmentTerms extends Span {
+	type: "fragment-terms";
+	terms: Terms<Floating>;
+}
 
 /// prenex = terms ZOhU #
 
@@ -576,8 +581,10 @@ export type TanruUnit2 =
 	| TuKe
 	| TuMe
 	| TuMoi
+	// TODO: nuha
 	| TuSe
 	| TuJai
+	// TODO: zei
 	| TuNahe
 	| TuNu;
 

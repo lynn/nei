@@ -19,6 +19,11 @@ pre { font-family: "Fira Code", monospace; }
 	@apply px-2 py-1 bg-blue-500 text-white cursor-pointer rounded
 }
 
+.hatch {
+	background-size: 8px 8px;
+	background-image: repeating-linear-gradient(-45deg, rgba(0,0,0,0.2) 0, rgba(0,0,0,0.2) 1px, transparent 0, transparent 50%);
+}
+
 html,
 body,
 #app {
