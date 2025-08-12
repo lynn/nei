@@ -1,8 +1,9 @@
 import { useMemo, useState } from "preact/hooks";
 import "./app.css";
 import { TextBox, TokenContext } from "./boxes";
-import { type ParseResult, type Snapshot, parse } from "./parse";
-import { Tokenizer, type Token } from "./tokenize";
+import { type ParseResult, parse, type Snapshot } from "./parse";
+import { type Token, Tokenizer } from "./tokenize";
+import { score } from "./jvotci";
 
 interface IoProps {
 	input: string;
@@ -113,7 +114,7 @@ export function App() {
 
 	return (
 		<div class="flex flex-col min-h-screen p-4">
-			<h1 class="text-3xl font-bold">🔬 la nei</h1>
+			<h1 class="text-3xl font-bold">🔬 la nei {score("bra")}</h1>
 			<div class="mb-8">sei gerna lanli tutci</div>
 			<div class="io-list">
 				{ios.map((io, index) => (
