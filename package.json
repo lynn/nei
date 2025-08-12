@@ -11,7 +11,8 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "preact": "^10.26.9",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "latkerlo-jvotci": "file:latkerlo-jvotci"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.3",

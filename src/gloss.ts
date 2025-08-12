@@ -1,3 +1,15 @@
+import { getVeljvo } from "latkerlo-jvotci";
+import jvs from "../lidysisku/jvs-en.json";
+import { analyseBrivla } from "./jvotci";
+
+export const definitions: Record<string, string> = {};
+
+for (const row of jvs) {
+	if (typeof row[4] === "string") {
+		definitions[row[0]] = row[4];
+	}
+}
+
 export const shortDescriptions: Record<string, string> = {
 	e: "and",
 	ji: "or?",
@@ -12,6 +24,10 @@ export const shortDescriptions: Record<string, string> = {
 	ju: "whether or not",
 
 	joi: "and",
+
+	noi: "which",
+	poi: "which",
+	voi: "which",
 
 	// "du'o": "according to",
 	// "si'u": "aided by",
@@ -332,6 +348,16 @@ export const shortDescriptions: Record<string, string> = {
     
     */
 
+	se: "x2",
+	te: "x3",
+	ve: "x4",
+	xe: "x5",
+	fa: "x1",
+	fe: "x2",
+	fi: "x3",
+	fo: "x4",
+	fu: "x5",
+
 	// pro-sumti
 	mi: "me",
 	do: "you",
@@ -373,7 +399,7 @@ export const shortDescriptions: Record<string, string> = {
 	so: "9",
 	no: "0",
 	ro: "all",
-    "su'o": "some",
+	"su'o": "some",
 
 	"zo'e": "something",
 	na: "not",
@@ -1731,3 +1757,40 @@ export const shortDescriptions: Record<string, string> = {
 	zutse: "sit",
 	zvati: "at",
 };
+
+export function glossFromDefinition(definition: string): string | undefined {
+	const m = definition.match(
+		/^\$[a-z1-5=_]+\$ (is( an?| some)?|are|acts) (quantity of |amount of )?([\w ]+)(?= of| with| for| to| in| at| toward| involving|\W|$)/,
+	);
+	if (m && m[4].length < 16) return m[4];
+	const m2 = definition.match(
+		/^\$[a-z1-5=_]+\$ ([a-z/ ]+)( for| to| in| at| of| with| toward)?[$.]/,
+	);
+	if (m2) {
+		const gloss = m2[1].split("/")[0];
+		if (gloss.length < 16) return gloss;
+	}
+	return undefined;
+}
+
+export function getDefinition(word: string): string | undefined {
+	return definitions[word];
+}
+
+export function glossWord(word: string): string | undefined {
+	const short = shortDescriptions[word];
+	if (short) return short;
+	const definition = getDefinition(word);
+	if (definition) {
+		const gloss = glossFromDefinition(definition);
+		if (gloss) return gloss;
+	}
+	const analysis = analyseBrivla(word);
+	console.log({ analysis });
+	if (analysis.success && analysis.type.endsWith("LUJVO")) {
+		const partGlosses = getVeljvo(word).map((x) => glossWord(x));
+		if (partGlosses.every((x) => x)) {
+			return partGlosses.join("-");
+		}
+	}
+}

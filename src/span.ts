@@ -19,10 +19,8 @@ export function startOf(...spans: HasIndex[]): TokenIndex {
 }
 
 export function endOf(...spans: HasIndex[]): TokenIndex {
-	console.log("endOf before", spans);
 	for (let i = spans.length - 1; i >= 0; i--) {
 		const span = spans[i];
-		console.log("endOf", i, span);
 		if (typeof span === "number") return span;
 		if (span === undefined) continue;
 		if (Array.isArray(span)) {
@@ -33,7 +31,6 @@ export function endOf(...spans: HasIndex[]): TokenIndex {
 		if ("index" in span) return span.index;
 		return span.end;
 	}
-	console.log("endOf", spans);
 	return Number.NEGATIVE_INFINITY;
 }
 

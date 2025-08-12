@@ -1,26 +1,10 @@
-export type BrivlaType =
-	| "GISMU"
-	| "ZIhEVLA"
-	| "LUJVO"
-	| "EXTENDED_LUJVO"
-	| "RAFSI"
-	| "CMEVLA";
+import {
+	analyseBrivla as analyseBrivlaThrow,
+	type BrivlaType,
+	NotBrivlaError,
+} from "latkerlo-jvotci";
 
 export type BrivlaProblem = string;
-
-declare global {
-	interface Window {
-		score(rafsi: string): number;
-		analyseBrivla(brivla: string): [BrivlaType, string[]];
-		VALID: string[];
-		INITIAL: string[];
-	}
-	class NotBrivlaError extends Error {}
-}
-
-export const score = window.score;
-export const validConsonantClusters = window.VALID;
-export const validInitialClusters = window.INITIAL;
 
 export function analyseBrivla(
 	brivla: string,
@@ -28,7 +12,7 @@ export function analyseBrivla(
 	| { success: true; type: BrivlaType; parts: string[] }
 	| { success: false; brivla: string; problem: BrivlaProblem } {
 	try {
-		const result = window.analyseBrivla(brivla);
+		const result = analyseBrivlaThrow(brivla);
 		return { success: true, type: result[0], parts: result[1] };
 	} catch (e) {
 		if (e instanceof NotBrivlaError) {

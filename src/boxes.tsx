@@ -2,14 +2,14 @@
 
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
-import { shortDescriptions } from "./gloss";
+import { glossWord } from "./gloss";
 import type * as G from "./grammar";
 import { isTenseSelmaho, type Token } from "./tokenize";
 
 export const TokenContext = createContext<Token[]>([]);
 
 export function ShowToken({ token }: { token: Token }) {
-	const gloss = shortDescriptions[token.lexeme];
+	const gloss = glossWord(token.lexeme);
 	return (
 		<div className="inline-flex flex-col hover:bg-black/10">
 			<pre
