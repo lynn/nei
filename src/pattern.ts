@@ -8,29 +8,33 @@ export type Pattern =
 	| { type: "optional"; pattern: Pattern }
 	| Selmaho;
 
-export function among(...selmaho: Selmaho[]) {
+export function among(...selmaho: Selmaho[]): Pattern {
 	return { type: "among", selmaho };
 }
 
-export function notAmong(...selmaho: Selmaho[]) {
+export function notAmong(...selmaho: Selmaho[]): Pattern {
 	return { type: "notAmong", selmaho };
 }
 
-export function many(pattern: Pattern) {
+export function many(pattern: Pattern): Pattern {
 	return { type: "many", pattern, min: 0 };
 }
 
-export function many1(pattern: Pattern) {
+export function many1(pattern: Pattern): Pattern {
 	return { type: "many", pattern, min: 1 };
 }
 
-export function seq(...patterns: Pattern[]) {
+export function seq(...patterns: Pattern[]): Pattern {
 	return { type: "sequence", patterns };
 }
 
-export function opt(pattern: Pattern) {
+export function opt(pattern: Pattern): Pattern {
 	return { type: "optional", pattern };
 }
+
+export const patternPa = seq("PA", many(among("PA", "BY")), "PA");
+export const patternPaMoi = seq(patternPa, "MOI");
+export const patternPaMai = seq(patternPa, "MAI");
 
 export function matchesPattern(
 	tokens: Token[],

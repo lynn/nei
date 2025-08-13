@@ -29,6 +29,9 @@ export const shortDescriptions: Record<string, string> = {
 	poi: "which",
 	voi: "which",
 
+	"je'u": "[truth]",
+	"ju'o": "I'm certain",
+
 	// "du'o": "according to",
 	// "si'u": "aided by",
 	// zau: "approved by",
@@ -316,7 +319,7 @@ export const shortDescriptions: Record<string, string> = {
 	"i'o": "thanks",
 	"i'e": "good!",
 	"a'a": "oh",
-	"ia": "I believe",
+	ia: "I believe",
 	"o'i": "watch out!",
 	"e'e": "can",
 	oi: "ugh",
@@ -392,7 +395,7 @@ export const shortDescriptions: Record<string, string> = {
 
 	"zo'e": "something",
 	na: "not",
-	nai: "n't",
+	nai: "not",
 	xu: "if?",
 
 	// pro-selbri
@@ -1766,20 +1769,50 @@ export function getDefinition(word: string): string | undefined {
 	return definitions[word];
 }
 
-export function glossWord(word: string): string | undefined {
+export function glossWord(
+	word: string,
+	selmaho: string,
+): { gloss: string; problem?: boolean } | undefined {
 	const short = shortDescriptions[word];
-	if (short) return short;
+	if (short) return { gloss: short };
 	const definition = getDefinition(word);
 	if (definition) {
 		const gloss = glossFromDefinition(definition);
-		if (gloss) return gloss;
+		if (gloss) return { gloss };
 	}
+	if (selmaho !== "BRIVLA") {
+		return undefined;
+	}
+
 	const analysis = analyseBrivla(word);
 	console.log({ analysis });
 	if (analysis.success && analysis.type.endsWith("LUJVO")) {
-		const partGlosses = getVeljvo(word).map((x) => glossWord(x));
-		if (partGlosses.every((x) => x)) {
-			return partGlosses.join("-");
+		const partGlosses = getVeljvo(word).map((x) => glossWord(x, "BRIVLA"));
+		const parts = partGlosses.map((x) => (x && "gloss" in x ? x.gloss : ""));
+		if (parts.every((x) => x)) {
+			return { gloss: parts.join("-") };
 		}
+	} else if (!analysis.success) {
+		if (/^[^aeiou][aeiou][^aeiou]/.test(word)) {
+			const insertY = `${word.slice(0, 3)}y${word.slice(3)}`;
+			const yAnalysis = analyseBrivla(insertY);
+			if (yAnalysis.success && yAnalysis.type.endsWith("LUJVO")) {
+				return {
+					problem: true,
+					gloss: `falls apart (did you mean ${insertY}?)`,
+				};
+			}
+		} else {
+			const ba = `ba${word}`;
+			const baAnalysis = analyseBrivla(ba);
+
+			if (baAnalysis.success && baAnalysis.type.endsWith("LUJVO")) {
+				return {
+					problem: true,
+					gloss: `invalid: "ba${word}" would be a lujvo`,
+				};
+			}
+		}
+		return { problem: true, gloss: analysis.problem.replace(/:? \{[^{}]*\}$/, "") };
 	}
 }

@@ -4,23 +4,18 @@ import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 import { glossWord } from "./gloss";
 import type * as G from "./grammar";
-import { isTenseSelmaho, type Token } from "./tokenize";
+import type { Token } from "./tokenize";
 
 export const TokenContext = createContext<Token[]>([]);
 
 export function ShowToken({ token }: { token: Token }) {
-	const gloss = glossWord(token.lexeme);
+	const gloss = glossWord(token.lexeme, token.selmaho);
 	return (
 		<div className="inline-flex flex-col hover:bg-black/10">
 			<pre
 				class="inline-block tracking-tighter"
 				style={{
-					color:
-						token.lexeme === "bisladru"
-							? "#e03000"
-							: isTenseSelmaho(token.selmaho)
-								? "#c00080"
-								: "black",
+					color: gloss?.problem ? "#e03000" : "black",
 				}}
 			>
 				{token.erased.length > 0 && (
@@ -30,7 +25,9 @@ export function ShowToken({ token }: { token: Token }) {
 				)}
 				{token.sourceText}
 			</pre>
-			<span className="text-xs italic font-light">{gloss || "\u00a0"}</span>
+			<span className="text-xs italic font-light whitespace-pre-wrap">
+				{gloss?.gloss || "\u00a0"}
+			</span>
 		</div>
 	);
 }
