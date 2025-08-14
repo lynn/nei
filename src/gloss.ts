@@ -376,8 +376,8 @@ export const shortDescriptions: Record<string, string> = {
 	ba: "will",
 
 	// abstractors
-	"du'u": "that", // TODO expression?
-	nu: "that",
+	"du'u": "that",
+	nu: "event of",
 
 	// numbers
 	pa: "1",
