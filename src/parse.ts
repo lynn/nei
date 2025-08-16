@@ -13,11 +13,14 @@ import type {
 	CeiTanruUnit1,
 	CmavoWithFrees,
 	Cmene,
+	Ek,
+	EkWithFrees,
 	Floating,
 	Fragment,
 	Free,
 	Gihek,
 	GihekTail,
+	GihekWithFrees,
 	Gik,
 	Guhek,
 	Ibo,
@@ -33,6 +36,7 @@ import type {
 	Joik,
 	JoikJek,
 	Linkargs,
+	Links,
 	Many,
 	Motion,
 	Naku,
@@ -173,6 +177,20 @@ export class Parser extends BaseParser {
 			this.tryParseIbo() ??
 			this.tryParseNihos() ??
 			this.tryParseCmavoWithFrees("I");
+
+		if (
+			this.isAhead(["LIhU"]) ||
+			this.isAhead(["CU"]) ||
+			this.index === this.tokens.length
+		) {
+			return {
+				type: "text-1",
+				...spanOf(i),
+				firstSeparator: i,
+				paragraphs: [],
+			};
+		}
+
 		const first = this.parseParagraph();
 		const paragraphs = [first];
 		while (this.peekToken()?.selmaho === "NIhO") {
@@ -252,7 +270,62 @@ export class Parser extends BaseParser {
 	}
 
 	private parseTem(): Statement | Fragment {
-		return this.parseStatement(true);
+		if (
+			this.isSumtiAhead() ||
+			this.isVerbAhead() ||
+			this.isTaggedVerbAhead() ||
+			this.isTenseAhead()
+		) {
+			return this.parseStatement(true);
+		}
+
+		const ek = this.tryParseEkWithFrees();
+		if (ek !== undefined) {
+			return { type: "fragment", ...spanOf(ek), value: ek };
+		}
+
+		const gihek = this.tryParseGihekWithFrees();
+		if (gihek !== undefined) {
+			return { type: "fragment", ...spanOf(gihek), value: gihek };
+		}
+
+		const quantifier = this.tryParseQuantifier();
+		if (quantifier !== undefined) {
+			return { type: "fragment", ...spanOf(quantifier), value: quantifier };
+		}
+
+		const links = this.tryParseLinks();
+		if (links !== undefined) {
+			return { type: "fragment", ...spanOf(links), value: links };
+		}
+
+		const linkargs = this.tryParseLinkArgs();
+		if (linkargs !== undefined) {
+			return { type: "fragment", ...spanOf(linkargs), value: linkargs };
+		}
+
+		const na = this.tryParseCmavoWithFrees("NA");
+		if (na !== undefined) {
+			return { type: "fragment", ...spanOf(na), value: na };
+		}
+
+		// TODO: prenex
+
+		const relativeClauses = this.tryParseRelativeClauses(undefined);
+		if (relativeClauses !== undefined) {
+			return {
+				type: "fragment",
+				...spanOf(relativeClauses),
+				value: relativeClauses,
+			};
+		}
+
+		throw new ParseError("expected statement or fragment");
+	}
+
+	private isTenseAhead(): boolean {
+		const selmaho = this.peekToken()?.selmaho;
+		return selmaho !== undefined && isTenseSelmaho(selmaho);
 	}
 
 	private parseStatement(allowFragment: boolean): Statement | Fragment {
@@ -579,6 +652,20 @@ export class Parser extends BaseParser {
 		if (be === undefined) return undefined;
 		const term = this.tryParseTerm();
 		if (!term) throw new ParseError("no term after be");
+		const links = this.tryParseLinks();
+		const beho = this.tryParseCmavoWithFrees("BEhO");
+
+		return {
+			type: "linkargs",
+			...spanOf(be, term, links, beho),
+			be,
+			term,
+			links,
+			beho,
+		};
+	}
+
+	private tryParseLinks(): Links | undefined {
 		const links: BeiLink[] = [];
 		while (this.peekToken()?.selmaho === "BEI") {
 			const bei = this.tryParseCmavoWithFrees("BEI")!;
@@ -591,15 +678,11 @@ export class Parser extends BaseParser {
 				term,
 			});
 		}
-		const beho = this.tryParseCmavoWithFrees("BEhO");
-
+		if (links.length === 0) return undefined;
 		return {
-			type: "linkargs",
-			...spanOf(be, term, links, beho),
-			be,
-			term,
-			links,
-			beho,
+			type: "links",
+			...spanOf(links),
+			links: links as Many<BeiLink>,
 		};
 	}
 
@@ -836,7 +919,7 @@ export class Parser extends BaseParser {
 	}
 
 	private tryParseRelativeClauses(
-		antecedent: Span,
+		antecedent: Span | undefined,
 	): RelativeClauses | undefined {
 		const relativeClause = this.tryParseRelativeClause(antecedent);
 		if (!relativeClause) return undefined;
@@ -847,7 +930,9 @@ export class Parser extends BaseParser {
 		};
 	}
 
-	private tryParseRelativeClause(antecedent: Span): RelativeClause | undefined {
+	private tryParseRelativeClause(
+		antecedent: Span | undefined,
+	): RelativeClause | undefined {
 		const noi = this.tryParseCmavoWithFrees("NOI");
 		if (!noi) return undefined;
 		const subsentence = this.parseSubsentence();
@@ -1047,7 +1132,7 @@ export class Parser extends BaseParser {
 		const oldIndex = this.index;
 		while (true) {
 			const selmaho = this.tokens[this.index]?.selmaho;
-			if (isTenseSelmaho(selmaho)) {
+			if (isTenseSelmaho(selmaho) || selmaho === "NA") {
 				this.index++;
 				continue;
 			}
@@ -1280,6 +1365,33 @@ export class Parser extends BaseParser {
 			giha,
 			nai,
 		};
+	}
+
+	private tryParseGihekWithFrees(): GihekWithFrees | undefined {
+		const gihek = this.tryParseGihek();
+		if (gihek === undefined) return undefined;
+		const frees = this.parseFrees();
+		return { type: "gihek-with-frees", ...spanOf(gihek, frees), gihek, frees };
+	}
+
+	private tryParseEk(): Ek | undefined {
+		const backtrack = this.index;
+		const na = this.tryParseCmavo("NA");
+		const se = this.tryParseCmavo("SE");
+		const a = this.tryParseCmavo("A")!;
+		const nai = this.tryParseCmavo("NAI");
+		if (a === undefined) {
+			this.index = backtrack;
+			return undefined;
+		}
+		return { type: "ek", ...spanOf(na, se, a, nai), na, se, a, nai };
+	}
+
+	private tryParseEkWithFrees(): EkWithFrees | undefined {
+		const ek = this.tryParseEk();
+		if (ek === undefined) return undefined;
+		const frees = this.parseFrees();
+		return { type: "ek-with-frees", ...spanOf(ek, frees), ek, frees };
 	}
 
 	private parseTailTerms(): TailTerms<Floating> {
@@ -1522,7 +1634,7 @@ export class Parser extends BaseParser {
 		const caha = this.tryParseCmavo("CAhA");
 		const ki = this.tryParseCmavo("KI");
 
-		if (!tense && !caha) {
+		if (tense === undefined && caha === undefined) {
 			console.log({ nahe, tense, caha, ki });
 			// We should never hit this because we predict it
 			throw new ParseError("Bad stm-tense", this.index);

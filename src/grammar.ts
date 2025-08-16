@@ -149,8 +149,8 @@ export interface Statement3 extends Span {
 export interface Fragment extends Span {
 	type: "fragment";
 	value:
-		| Ek
-		| Gihek
+		| EkWithFrees
+		| GihekWithFrees
 		| Quantifier
 		| CmavoWithFrees
 		| Terms<Floating>
@@ -158,11 +158,6 @@ export interface Fragment extends Span {
 		| RelativeClauses
 		| Links
 		| Linkargs;
-}
-
-export interface Links extends Span {
-	type: "links";
-	links: BeiLink[];
 }
 
 /// prenex = terms ZOhU #
@@ -667,8 +662,13 @@ export interface Linkargs extends Span {
 	type: "linkargs";
 	be: CmavoWithFrees;
 	term: Term<Floating>;
-	links: BeiLink[];
+	links: Links | undefined;
 	beho: CmavoWithFrees | undefined;
+}
+
+export interface Links extends Span {
+	type: "links";
+	links: Many<BeiLink>;
 }
 
 export interface BeiLink extends Span {
@@ -726,6 +726,12 @@ export interface Ek extends Span {
 	nai: TokenIndex | undefined;
 }
 
+export interface EkWithFrees extends Span {
+	type: "ek-with-frees";
+	ek: Ek;
+	frees: Free[];
+}
+
 /// gihek = [NA] [SE] GIhA [NAI]
 
 export interface Gihek extends Span {
@@ -734,6 +740,12 @@ export interface Gihek extends Span {
 	se: TokenIndex | undefined;
 	giha: TokenIndex;
 	nai: TokenIndex | undefined;
+}
+
+export interface GihekWithFrees extends Span {
+	type: "gihek-with-frees";
+	gihek: Gihek;
+	frees: Free[];
 }
 
 /// jek = [NA] [SE] JA [NAI]
