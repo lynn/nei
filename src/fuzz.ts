@@ -3,6 +3,7 @@ import { cmavo } from "./cmavo";
 import { shortDescriptions } from "./gloss";
 import { parse } from "./parse";
 import { Tokenizer } from "./tokenize";
+import { alis } from "./alis";
 
 export function tokenPool(): string[] {
 	const tokens = new Set<string>([
@@ -13,36 +14,59 @@ export function tokenPool(): string[] {
 }
 
 export function randomSentence(length: number) {
-	const tokens = tokenPool();
-	const result = [];
-	for (let i = 0; i < length; i++) {
-		result.push(tokens[Math.floor(Math.random() * tokens.length)]);
-	}
-	return result.join(" ");
+	const start = Math.floor(Math.random() * (alis.length - length));
+	return alis
+		.split(/\s+/)
+		.slice(start, start + length)
+		.join(" ");
+	// const tokens = tokenPool();
+	// const result = [];
+	// for (let i = 0; i < length; i++) {
+	// 	result.push(tokens[Math.floor(Math.random() * tokens.length)]);
+	// }
+	// return result.join(" ");
 }
 
-export function fuzzOnce() {
-	const length = Math.floor(Math.random() * 10) + 1;
-	const sentence = randomSentence(length);
-	let ourSuccess: boolean;
-	try {
-		const tokens = new Tokenizer().tokenize(sentence);
-		ourSuccess = parse(tokens).success;
-	} catch (_e) {
-		ourSuccess = false;
-	}
+export class Fuzzer {
+	public fuzzes: number = 0;
+	public mistakes: number = 0;
+	public bothParse: number = 0;
+	public bothReject: number = 0;
 
-	let camxesSuccess: boolean;
-	try {
-		camxes.parse(sentence);
-		camxesSuccess = true;
-	} catch {
-		camxesSuccess = false;
-	}
+	public fuzzOnce() {
+		const length = Math.floor(Math.random() * 10) + 2;
+		const sentence = randomSentence(length);
+		let ourSuccess: boolean;
+		try {
+			const tokens = new Tokenizer().tokenize(sentence);
+			ourSuccess = parse(tokens).success;
+		} catch (_e) {
+			ourSuccess = false;
+		}
 
-	if (ourSuccess && !camxesSuccess) {
-		console.log("we parse, camxes rejects:", sentence);
-	} else if (!ourSuccess && camxesSuccess) {
-		console.log("we reject, camxes parses:", sentence);
+		let camxesSuccess: boolean;
+		try {
+			camxes.parse(sentence);
+			camxesSuccess = true;
+		} catch {
+			camxesSuccess = false;
+		}
+
+		this.fuzzes++;
+		if (ourSuccess) {
+			if (camxesSuccess) {
+				this.bothParse++;
+			} else {
+				this.mistakes++;
+				console.log("we parse, camxes rejects:", sentence);
+			}
+		} else {
+			if (camxesSuccess) {
+				this.mistakes++;
+				console.log("we reject, camxes parses:", sentence);
+			} else {
+				this.bothReject++;
+			}
+		}
 	}
 }

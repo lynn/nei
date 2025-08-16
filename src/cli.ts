@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
-import { fuzzOnce } from "./fuzz.js";
+import { Fuzzer } from "./fuzz.js";
 
 // Call fuzzOnce when the script is run directly
 
+const fuzzer = new Fuzzer();
 for (let i = 0; i < 1000; i++) {
-	fuzzOnce();
+	fuzzer.fuzzOnce();
 }
+
+console.log(`Error rate: ${(fuzzer.mistakes / fuzzer.fuzzes) * 100}%`);
