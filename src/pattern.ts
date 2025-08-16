@@ -5,7 +5,9 @@ export type Pattern =
 	| { type: "notAmong"; selmaho: Selmaho[] }
 	| { type: "many"; pattern: Pattern; min: number }
 	| { type: "sequence"; patterns: Pattern[] }
+	| { type: "either"; patterns: Pattern[] }
 	| { type: "optional"; pattern: Pattern }
+	| { type: "end-of-stream" }
 	| Selmaho;
 
 export function among(...selmaho: Selmaho[]): Pattern {
@@ -28,13 +30,54 @@ export function seq(...patterns: Pattern[]): Pattern {
 	return { type: "sequence", patterns };
 }
 
+export function either(...patterns: Pattern[]): Pattern {
+	return { type: "either", patterns };
+}
+
 export function opt(pattern: Pattern): Pattern {
 	return { type: "optional", pattern };
+}
+
+export function endOfStream(): Pattern {
+	return { type: "end-of-stream" };
 }
 
 export const patternPa = seq("PA", many(among("PA", "BY")), "PA");
 export const patternPaMoi = seq(patternPa, "MOI");
 export const patternPaMai = seq(patternPa, "MAI");
+
+export const patternVerb = seq(
+	many(among("NAhE", "KE")),
+	among("BRIVLA", "GOhA", "ME", "SE", "JAI", "NU"),
+);
+
+export const patternTense = seq(
+	either(
+		among(
+			"FA", // dubious but CLL says so
+			"BAI",
+			"CAhA",
+			"KI",
+			"CUhE",
+			"ZI",
+			"ZEhA",
+			"PU",
+			// "NAI",
+			"VA",
+			"MOhI",
+			"FAhA",
+			"VEhA",
+			"VIhA",
+			"FEhE",
+			"TAhE",
+			"ZAhO",
+		),
+		seq(patternPa, "ROI"),
+	),
+	opt("NAI"),
+);
+
+export const patternTenses = many1(patternTense);
 
 export function matchesPattern(
 	tokens: Token[],
@@ -65,7 +108,7 @@ export function matchesPattern(
 				i = first.end;
 			}
 			while (true) {
-				const next = matchesPattern(tokens, i, pattern);
+				const next = matchesPattern(tokens, i, pattern.pattern);
 				if (!next) break;
 				i = next.end;
 			}
@@ -82,6 +125,15 @@ export function matchesPattern(
 		}
 		case "optional":
 			return matchesPattern(tokens, index, pattern.pattern) || { end: index };
+		case "either": {
+			for (const subpattern of pattern.patterns) {
+				const next = matchesPattern(tokens, index, subpattern);
+				if (next) return next;
+			}
+			return undefined;
+		}
+		case "end-of-stream":
+			return index === tokens.length ? { end: index } : undefined;
 		default:
 			pattern satisfies never;
 	}

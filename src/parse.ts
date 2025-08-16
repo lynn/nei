@@ -97,6 +97,7 @@ import type {
 	Zehapu,
 } from "./grammar";
 import { BaseParser } from "./parse-base";
+import { among, either, opt, patternVerb, seq } from "./pattern";
 import { spanOf } from "./span";
 import { isTenseSelmaho, type Selmaho, type Token } from "./tokenize";
 
@@ -179,8 +180,7 @@ export class Parser extends BaseParser {
 			this.tryParseCmavoWithFrees("I");
 
 		if (
-			this.isAhead(["LIhU"]) ||
-			this.isAhead(["CU"]) ||
+			this.isAhead(among("LIhU", "CU")) ||
 			this.index === this.tokens.length
 		) {
 			return {
@@ -446,17 +446,7 @@ export class Parser extends BaseParser {
 	}
 
 	private isVerbAhead(): boolean {
-		const decision =
-			(this.isAhead(["NAhE"]) && !this.isAhead(["NAhE", "BO"])) ||
-			this.isAhead(["BRIVLA"]) ||
-			this.isAhead(["GOhA"]) ||
-			this.isAhead(["KE"]) || // really?
-			this.isAhead(["ME"]) || // TODO: moi, tricky lookahead (.i mi panononono da/moi)
-			this.isAhead(["SE"]) ||
-			this.isAhead(["JAI"]) ||
-			this.isAhead(["NU"]);
-
-		return decision;
+		return this.isAhead(patternVerb);
 	}
 
 	private parseSelbri3(): Selbri3 {
@@ -1057,17 +1047,11 @@ export class Parser extends BaseParser {
 	}
 
 	private isSumti6Ahead(): boolean {
-		return (
-			this.isAhead(["LAhE"]) ||
-			this.isAhead(["NAhE", "BO"]) ||
-			this.isAhead(["KOhA"]) ||
-			this.isAhead(["BY"]) ||
-			// this.isAhead(["BU"]) || // eliminated by tokenizer
-			this.isAhead(["LA"]) ||
-			this.isAhead(["LE"]) ||
-			this.isAhead(["LI"]) ||
-			this.isAhead(["QUOTE"]) ||
-			this.isAhead(["LU"])
+		return this.isAhead(
+			either(
+				seq("NAhE", "BO"),
+				among("LAhE", "KOhA", "BY", "LA", "LE", "LI", "QUOTE", "LU"),
+			),
 		);
 	}
 
@@ -1105,7 +1089,7 @@ export class Parser extends BaseParser {
 		if (this.isNumberMoiAhead()) {
 			return false;
 		}
-		return this.isAhead(["PA"]);
+		return this.isAhead("PA");
 	}
 
 	private isTaggedSumtiAhead(): boolean {
@@ -1175,7 +1159,7 @@ export class Parser extends BaseParser {
 		if (!token) {
 			return undefined;
 		}
-		if (this.isAhead(["NA", "KU"])) {
+		if (this.isAhead(seq("NA", "KU"))) {
 			return this.parseNaku();
 		}
 		if (this.isSumtiAhead()) {
@@ -1592,7 +1576,7 @@ export class Parser extends BaseParser {
 	}
 
 	private parseSimpleTenseModal(): SimpleTenseModal {
-		if (this.isAhead(["KI"]) || this.isAhead(["CUhE"])) {
+		if (this.isAhead(among("KI", "CUhE"))) {
 			const kiOrCuhe = this.nextToken()!;
 			return {
 				type: "stm-cmavo",
@@ -1600,12 +1584,7 @@ export class Parser extends BaseParser {
 				kiOrCuhe: kiOrCuhe.index,
 			};
 		}
-		if (
-			this.isAhead(["NAhE", "SE", "BAI"]) ||
-			this.isAhead(["NAhE", "BAI"]) ||
-			this.isAhead(["SE"]) ||
-			this.isAhead(["BAI"])
-		) {
+		if (this.isAhead(seq(opt("NAhE"), opt("SE"), "BAI"))) {
 			return this.parseStmBai();
 		}
 		return this.parseStmTense();

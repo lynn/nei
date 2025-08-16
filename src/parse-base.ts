@@ -8,6 +8,7 @@ import type {
 	TokenIndex,
 } from "./grammar";
 import type { Snapshot } from "./parse";
+import { matchesPattern, type Pattern } from "./pattern";
 import type { Selmaho, Token } from "./tokenize";
 
 export class BaseParser {
@@ -71,8 +72,8 @@ export class BaseParser {
 		return undefined;
 	}
 
-	protected isAhead(selmahos: Selmaho[]): boolean {
-		return selmahos.every((s, i) => this.tokens[this.index + i]?.selmaho === s);
+	protected isAhead(pattern: Pattern): boolean {
+		return matchesPattern(this.tokens, this.index, pattern) !== undefined;
 	}
 
 	protected tryParseCmavo(selmaho: Selmaho): TokenIndex | undefined {
