@@ -156,7 +156,11 @@ export function ItemBox({ item }: { item: G.Item }) {
 }
 
 export function FragmentBox({ fragment }: { fragment: G.Fragment }) {
-	return <TermsBox terms={fragment.terms} />;
+	if (fragment.value.type === "terms") {
+		return <TermsBox terms={fragment.value} />;
+	} else {
+		return <ShowSpan span={fragment} />;
+	}
 }
 
 export function StatementBox({ statement }: { statement: G.Statement }) {

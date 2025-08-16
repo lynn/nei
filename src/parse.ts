@@ -1,5 +1,6 @@
 /** biome-ignore-all lint/style/noNonNullAssertion: Useful */
 
+import { HeadBridi, type TailBridi } from "./bridi";
 import { ParseError, Unsupported } from "./error";
 import type {
 	BeiLink,
@@ -111,9 +112,9 @@ export interface Snapshot {
  * State in the context of which a positional sumti can occur.
  * After saying "mi mutce nelci..." there is a Tertau hanging in the air
  * with `tertau` = nelci and `state` = {x:2, filled: {1}}.
- * After "mi zgana gi'e nelci vau..." there are two Tertaus.
+ * After "mi zgana gi'e nelci vau..." there are two tails.
  */
-export interface Tertau {
+export interface TailState {
 	tertau: Span;
 	state: TerbriState;
 }
@@ -257,7 +258,7 @@ export class Parser extends BaseParser {
 	private parseStatement(allowFragment: boolean): Statement | Fragment {
 		this.begin("statement");
 		const first = this.parseStatement1(allowFragment);
-		if (first.type === "fragment-terms") return first;
+		if (first.type === "fragment") return first;
 
 		return this.parsed("statement", {
 			type: "statement",
@@ -271,7 +272,7 @@ export class Parser extends BaseParser {
 	private parseStatement1(allowFragment: boolean): Statement1 | Fragment;
 	private parseStatement1(allowFragment: boolean): Statement1 | Fragment {
 		const first = this.parseStatement2(allowFragment);
-		if (first.type === "fragment-terms") return first;
+		if (first.type === "fragment") return first;
 		const rest: IjekStatement2[] = [];
 		while (true) {
 			const ijek = this.tryParseIjek();
@@ -296,7 +297,7 @@ export class Parser extends BaseParser {
 	private parseStatement2(allowFragment: boolean): Statement2 | Fragment;
 	private parseStatement2(allowFragment: boolean): Statement2 | Fragment {
 		const first = this.parseStatement3(allowFragment);
-		if (first.type === "fragment-terms") return first;
+		if (first.type === "fragment") return first;
 
 		const rest: IboStatement2[] = [];
 		while (true) {
@@ -320,7 +321,7 @@ export class Parser extends BaseParser {
 
 	private parseStatement3(allowFragment: boolean): Statement3 | Fragment {
 		const sentence = this.parseSentence(allowFragment);
-		if (sentence.type === "fragment-terms") return sentence;
+		if (sentence.type === "fragment") return sentence;
 		return {
 			type: "statement-3",
 			...spanOf(sentence),
@@ -1136,9 +1137,7 @@ export class Parser extends BaseParser {
 	private parseSentence(allowFragment: boolean): Sentence | Fragment;
 	private parseSentence(allowFragment: boolean): Sentence | Fragment {
 		this.begin("sentence");
-		const head: Term<Floating>[] = [];
-		const headState: TerbriState = { x: 1, filled: 0n };
-		const headPositions: (number | "fai" | "?" | "modal")[] = [];
+		const headBridi = new HeadBridi();
 		while (true) {
 			const term = this.tryParseTerm();
 			if (!term) {
@@ -1146,71 +1145,30 @@ export class Parser extends BaseParser {
 				break;
 			}
 			this.log(`Parsed term`, term);
-			head.push(term);
-			if (term.type === "sumti") {
-				headPositions.push(headState.x);
-				headState.filled |= 1n << BigInt(headState.x);
-				while (headState.filled & (1n << BigInt(headState.x))) headState.x++;
-			} else if (term.type === "tagged" && term.tagOrFa.type !== "tag") {
-				// FA
-				const num = this.faToXIndex(term.tagOrFa);
-				headPositions.push(num);
-				if (typeof num === "number") {
-					headState.filled |= 1n << BigInt(num);
-					headState.x = num;
-					while (headState.filled & (1n << BigInt(headState.x))) headState.x++;
-				}
-			} else {
-				headPositions.push("modal");
-			}
+			headBridi.place(term, this.tokens);
 		}
-		const cu = head.length ? this.tryParseCmavoWithFrees("CU") : undefined;
+		const cu =
+			headBridi.length() > 0 ? this.tryParseCmavoWithFrees("CU") : undefined;
 		if (
 			!this.isVerbAhead() &&
 			!this.isTaggedVerbAhead() &&
 			!cu &&
 			allowFragment
 		) {
-			return {
-				type: "fragment-terms",
-				...spanOf(head),
-				terms: { type: "terms", ...spanOf(head), terms: head },
-			};
+			return headBridi.asFragment();
 		}
 
-		if (headState.x === 1) {
-			// After verb, skip to the x2:
-			headState.x = 2;
-		}
-		const { bridiTail, tertaus } = this.parseBridiTail(headState);
+		const tailBridi = headBridi.finish();
+		const bridiTail = this.parseBridiTail(tailBridi);
 
-		const terms: Terms<Positional> | undefined =
-			head.length > 0
-				? {
-						type: "terms",
-						...spanOf(head),
-						terms: head.map((term, i) =>
-							term.type === "naku"
-								? term
-								: {
-										...term,
-										role: {
-											roles: tertaus.map((t) => ({
-												xIndex: headPositions[i],
-												verb: t.tertau,
-											})),
-										},
-									},
-						),
-					}
-				: undefined;
+		const terms: Terms<Positional> | undefined = tailBridi.placeHeadTerms();
 
 		return this.parsed("sentence", {
 			type: "sentence",
-			...spanOf(head, cu, bridiTail),
+			...spanOf(headBridi.span(), cu, bridiTail),
+			terms,
 			cu,
 			bridiTail,
-			terms,
 		});
 	}
 
@@ -1224,43 +1182,23 @@ export class Parser extends BaseParser {
 		};
 	}
 
-	/**
-	 *
-	 *   mi ti nelci ta gi'e dunda do vau ra
-	 *
-	 *   mi = nelci1 = dunda1
-	 *   ti = nelci2 = dunda2
-	 *
-	 */
-
-	private parseBridiTail(headState: TerbriState): {
-		bridiTail: BridiTail<Positional>;
-		tertaus: Tertau[];
-	} {
-		const { bridiTail1, tertaus } = this.parseBridiTail1(headState);
+	private parseBridiTail(bridi: TailBridi): BridiTail<Positional> {
+		const bridiTail1 = this.parseBridiTail1(bridi);
 		return {
-			bridiTail: {
-				type: "bridi-tail",
-				...spanOf(bridiTail1),
-				first: bridiTail1,
-			},
-			tertaus,
+			type: "bridi-tail",
+			...spanOf(bridiTail1),
+			first: bridiTail1,
 		};
 	}
 
-	private parseBridiTail1(headState: TerbriState): {
-		bridiTail1: BridiTail1<Positional>;
-		tertaus: Tertau[];
-	} {
+	private parseBridiTail1(bridi: TailBridi): BridiTail1<Positional> {
 		this.begin("bridi-tail-1");
-		const { bridiTail2, tertaus: lhsTertaus } = this.parseBridiTail2(headState);
-		const allTertaus = lhsTertaus;
-		const rest = [];
+		const bridiTail2 = this.parseBridiTail2(bridi);
+		const rest: GihekTail<Positional>[] = [];
 		while (true) {
-			const gihek = this.tryParseGihekTail(headState, lhsTertaus);
+			const gihek = this.tryParseGihekTail(bridi);
 			if (!gihek) break;
-			rest.push(gihek.gihek);
-			allTertaus.push(...gihek.tertaus);
+			rest.push(gihek);
 		}
 		const bridiTail1: BridiTail1<Positional> = this.parsed("bridi-tail-1", {
 			type: "bridi-tail-1",
@@ -1268,163 +1206,50 @@ export class Parser extends BaseParser {
 			first: bridiTail2,
 			rest,
 		});
-		return { bridiTail1, tertaus: allTertaus };
+		return bridiTail1;
 	}
 
 	private tryParseGihekTail(
-		headState: TerbriState,
-		lhs: Tertau[],
-	):
-		| {
-				gihek: GihekTail<Positional>;
-				tertaus: Tertau[];
-		  }
-		| undefined {
+		bridi: TailBridi,
+	): GihekTail<Positional> | undefined {
 		const gihek = this.tryParseGihek();
 		if (gihek === undefined) return undefined;
 		const frees = this.parseFrees();
-		const { bridiTail2, tertaus } = this.parseBridiTail2(headState);
+		const bridiTail2 = this.parseBridiTail2(bridi);
 		const tailTerms = this.parseTailTerms();
 
 		return {
-			tertaus,
-			gihek: {
-				type: "gihek-tail-1",
-				gihek,
-				frees,
-				tail: bridiTail2,
-				tailTerms: this.placeTailTerms(tailTerms, [...lhs, ...tertaus])
-					.placedTerms,
-				...spanOf(gihek, frees, bridiTail2, tailTerms),
-			},
+			type: "gihek-tail-1",
+			gihek,
+			frees,
+			tail: bridiTail2,
+			tailTerms: bridi.placeTailTerms(tailTerms, this.tokens),
+			...spanOf(gihek, frees, bridiTail2, tailTerms),
 		};
 	}
 
-	private parseBridiTail2(headState: TerbriState): {
-		bridiTail2: BridiTail2<Positional>;
-		tertaus: Tertau[];
-	} {
-		const { bridiTail, tertaus: newTertaus } = this.parseBridiTail3(headState);
+	private parseBridiTail2(bridi: TailBridi): BridiTail2<Positional> {
+		const bridiTail3 = this.parseBridiTail3(bridi);
 		return {
-			tertaus: newTertaus,
-			bridiTail2: {
-				type: "bridi-tail-2",
-				...spanOf(bridiTail),
-				first: bridiTail,
-			},
+			type: "bridi-tail-2",
+			...spanOf(bridiTail3),
+			first: bridiTail3,
 		};
 	}
 
-	private faToXIndex(fa: CmavoWithFrees): number | "fai" | "?" {
-		const lexeme = this.tokens[fa.cmavo].lexeme;
-		if (lexeme === "fa") return 1;
-		if (lexeme === "fe") return 2;
-		if (lexeme === "fi") return 3;
-		if (lexeme === "fo") return 4;
-		if (lexeme === "fu") return 5;
-		if (lexeme === "fai") return "fai";
-		if (lexeme === "fi'a") return "?";
-		return 1;
-	}
-
-	private placeTailTerms(
-		tailTerms: TailTerms<Floating>,
-		tertaus: Tertau[],
-	): { placedTerms: TailTerms<Positional>; newTertaus: Tertau[] } {
-		const placed: Term<Positional>[] = [];
-		let iterTertaus = tertaus;
-
-		for (const term of tailTerms.terms?.terms ?? []) {
-			if (term.type === "sumti") {
-				placed.push({
-					...term,
-					role: {
-						roles: iterTertaus.map((s) => ({
-							xIndex: s.state.x,
-							verb: s.tertau,
-						})),
-					},
-				});
-
-				iterTertaus = iterTertaus.map((s) => {
-					const newFilled = s.state.filled | (1n << BigInt(s.state.x));
-					let newX = s.state.x;
-					while (newFilled & (1n << BigInt(newX))) {
-						newX++;
-					}
-					return { ...s, state: { x: newX, filled: newFilled } };
-				});
-			} else if (term.type === "tagged") {
-				if (term.tagOrFa.type !== "tag") {
-					// FA
-					const fa = term.tagOrFa;
-					const num = this.faToXIndex(fa);
-
-					placed.push({
-						...term,
-						role: {
-							roles: iterTertaus.map((s) => ({
-								xIndex: num,
-								verb: s.tertau,
-							})),
-						},
-					});
-
-					if (typeof num === "number") {
-						iterTertaus = iterTertaus.map((s) => {
-							const newFilled = s.state.filled | (1n << BigInt(num));
-							let newX = num;
-							while (newFilled & (1n << BigInt(newX))) newX++;
-							return { ...s, state: { x: newX, filled: newFilled } };
-						});
-					}
-				} else {
-					placed.push({
-						...term,
-						role: {
-							roles: iterTertaus.map((s) => ({
-								xIndex: "modal",
-								verb: s.tertau,
-							})),
-						},
-					});
-				}
-			}
-		}
-
-		const placedTerms: TailTerms<Positional> = {
-			type: "tail-terms",
-			...spanOf(tailTerms),
-			terms: {
-				type: "terms",
-				...spanOf(placed),
-				terms: placed,
-			},
-			vau: tailTerms.vau,
-		};
-
-		return { placedTerms, newTertaus: iterTertaus };
-	}
-
-	private parseBridiTail3(headState: TerbriState): {
-		bridiTail: BridiTail3<Positional>;
-		tertaus: Tertau[];
-	} {
+	private parseBridiTail3(bridi: TailBridi): BridiTail3<Positional> {
 		const selbri = this.parseSelbri();
 		const tailTerms = this.parseTailTerms();
 		const tailTertau = this.extractTertau(selbri, "tail");
-		const { placedTerms, newTertaus } = this.placeTailTerms(tailTerms, [
-			{ tertau: tailTertau, state: headState },
-		]);
+		bridi.openGroup(tailTertau);
+		const placedTerms = bridi.placeTailTerms(tailTerms, this.tokens);
+		bridi.closeGroup();
 
 		return {
-			tertaus: newTertaus,
-			bridiTail: {
-				type: "bridi-tail-3",
-				...spanOf(selbri, placedTerms),
-				selbri,
-				tailTerms: placedTerms,
-			},
+			type: "bridi-tail-3",
+			...spanOf(selbri, placedTerms),
+			selbri,
+			tailTerms: placedTerms,
 		};
 	}
 
@@ -2006,7 +1831,7 @@ export function parse(tokens: Token[]): ParseResult {
 			};
 		}
 	} catch (error) {
-		console.error(error);
+		// console.error(error);
 		if (error instanceof ParseError || error instanceof Unsupported) {
 			if ("site" in error && error.site !== undefined) {
 				// Try to show a partial parse... silly, but it's better than nothing.

@@ -46,7 +46,3 @@ export function fuzzOnce() {
 		console.log("we reject, camxes parses:", sentence);
 	}
 }
-
-for (let i = 0; i < 1000; i++) {
-	fuzzOnce();
-}

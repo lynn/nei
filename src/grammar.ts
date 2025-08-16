@@ -146,11 +146,23 @@ export interface Statement3 extends Span {
 ///   | links
 ///   | linkargs
 
-export type Fragment = FragmentTerms; // TODO: others
+export interface Fragment extends Span {
+	type: "fragment";
+	value:
+		| Ek
+		| Gihek
+		| Quantifier
+		| CmavoWithFrees
+		| Terms<Floating>
+		| Prenex
+		| RelativeClauses
+		| Links
+		| Linkargs;
+}
 
-export interface FragmentTerms extends Span {
-	type: "fragment-terms";
-	terms: Terms<Floating>;
+export interface Links extends Span {
+	type: "links";
+	links: BeiLink[];
 }
 
 /// prenex = terms ZOhU #
