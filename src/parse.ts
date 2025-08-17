@@ -4,6 +4,7 @@ import { HeadBridi, type TailBridi } from "./bridi";
 import { ParseError, Unsupported } from "./error";
 import type {
 	BeiLink,
+	BiheOperatorMex1,
 	BoSelbri6,
 	BridiTail,
 	BridiTail1,
@@ -38,15 +39,30 @@ import type {
 	Linkargs,
 	Links,
 	Many,
+	Mex,
+	Mex1,
+	Mex2,
+	MexFuha,
+	MexOperator,
+	MexSimple,
 	Motion,
 	Naku,
 	Nihos,
+	Operand,
+	Operand1,
+	Operand2,
+	Operand3,
+	Operator,
+	Operator1,
+	Operator2,
+	OperatorMex1,
 	Paragraph,
 	Positional,
 	Pretext,
 	Quantifier,
 	RelativeClause,
 	RelativeClauses,
+	RpExpression,
 	Selbri,
 	Selbri1,
 	Selbri2,
@@ -990,6 +1006,19 @@ export class Parser extends BaseParser {
 			};
 		}
 
+		if (token.selmaho === "LI") {
+			const li = this.tryParseCmavoWithFrees("LI")!;
+			const mex = this.parseMex();
+			const loho = this.tryParseCmavoWithFrees("LOhO");
+			return {
+				type: "sumti-6-li",
+				...spanOf(li, mex, loho),
+				li,
+				mex,
+				loho,
+			};
+		}
+
 		if (token.selmaho === "LA") {
 			const la = this.tryParseCmavoWithFrees("LA")!;
 			// TODO: relative clauses...
@@ -1873,6 +1902,138 @@ export class Parser extends BaseParser {
 			fehe,
 			intervalProperty,
 		};
+	}
+
+	private parseMex(): Mex {
+		const value = this.parseMexFuha() ?? this.parseMexSimple();
+		return { type: "mex", ...spanOf(value), value };
+	}
+
+	private parseMexFuha(): MexFuha | undefined {
+		const fuha = this.tryParseCmavoWithFrees("FUhA");
+		if (fuha === undefined) return undefined;
+		const rpExpression = this.parseRpExpression();
+		return {
+			type: "mex-fuha",
+			...spanOf(fuha, rpExpression),
+			fuha,
+			rpExpression,
+		};
+	}
+
+	private parseRpExpression(): RpExpression {
+		throw new Error("TODO rp-expression");
+	}
+
+	private parseMexSimple(): MexSimple {
+		const first = this.parseMex1();
+		const rest: OperatorMex1[] = [];
+
+		while (true) {
+			const next = this.tryParseOperatorMex1();
+			if (!next) break;
+			rest.push(next);
+		}
+		return { type: "mex-simple", ...spanOf(first, rest), first, rest };
+	}
+
+	private tryParseOperatorMex1(): OperatorMex1 | undefined {
+		const operator = this.tryParseOperator();
+		if (operator === undefined) return undefined;
+		const rest = this.parseMex1();
+		return {
+			type: "operator-mex-1",
+			...spanOf(operator, rest),
+			operator,
+			rest,
+		};
+	}
+
+	private parseMex1(): Mex1 {
+		const first = this.parseMex2();
+		const rest: BiheOperatorMex1 | undefined = undefined;
+		return { type: "mex-1", ...spanOf(first, rest), first, rest };
+	}
+
+	private parseMex2(): Mex2 {
+		const first = this.parseOperand();
+		return {
+			type: "mex-2",
+			...spanOf(first),
+			value: { type: "mex-2-operand", ...spanOf(first), operand: first },
+		};
+	}
+
+	private tryParseOperator(): Operator | undefined {
+		const first = this.tryParseOperator1();
+		if (first === undefined) return undefined;
+		return { type: "operator", ...spanOf(first), first };
+	}
+
+	private tryParseOperator1(): Operator1 | undefined {
+		const first = this.tryParseOperator2();
+		if (first === undefined) return undefined;
+		return { type: "operator-1", ...spanOf(first), first };
+	}
+
+	private tryParseOperator2(): Operator2 | undefined {
+		const operator = this.tryParseMexOperator();
+		if (operator === undefined) return undefined;
+		return { type: "operator-2", ...spanOf(operator), operator };
+	}
+
+	private tryParseMexOperator(): MexOperator | undefined {
+		const token = this.peekToken();
+		if (token?.selmaho === "VUhU") {
+			const vuhu = this.tryParseCmavoWithFrees("VUhU")!;
+			return { type: "mex-operator-vuhu", ...spanOf(vuhu), vuhu };
+		}
+		// TODO: other mex operators
+		return undefined;
+	}
+
+	private parseOperand(): Operand {
+		const first = this.parseOperand1();
+		return { type: "operand", ...spanOf(first), first };
+	}
+
+	private parseOperand1(): Operand1 {
+		const first = this.parseOperand2();
+		const rest: BiheOperatorMex1 | undefined = undefined;
+		return { type: "operand-1", ...spanOf(first, rest), first, rest };
+	}
+
+	private parseOperand2(): Operand2 {
+		const first = this.parseOperand3();
+		return { type: "operand-2", ...spanOf(first), first, rest: undefined };
+	}
+
+	private parseOperand3(): Operand3 {
+		const token = this.peekToken();
+		if (token?.selmaho === "NIhE") {
+			throw new Error("TODO ni'e");
+		} else if (token?.selmaho === "MOhE") {
+			throw new Error("TODO mo'e");
+		} else if (token?.selmaho === "JOhI") {
+			throw new Error("TODO jo'i");
+		} else if (token?.selmaho === "GA") {
+			throw new Error("TODO gek");
+		} else if (token?.selmaho === "LAhE") {
+			throw new Error("TODO la'e");
+		} else if (this.isAhead(seq("NAhE", "BO"))) {
+			throw new Error("TODO na'ebo");
+		} else {
+			const quantifier = this.tryParseQuantifier();
+			if (quantifier) {
+				return {
+					type: "operand-3",
+					...spanOf(quantifier),
+					value: { type: "o3-quantifier", ...spanOf(quantifier), quantifier },
+				};
+			} else {
+				throw new Error("TODO operand3");
+			}
+		}
 	}
 }
 

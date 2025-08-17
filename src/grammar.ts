@@ -394,7 +394,7 @@ export interface Sumti6Le extends Span {
 export interface Sumti6Li extends Span {
 	type: "sumti-6-li";
 	li: CmavoWithFrees;
-	lerfuString: LerfuString; // not doing mekso...
+	mex: Mex;
 	loho: CmavoWithFrees | undefined;
 }
 
@@ -689,7 +689,7 @@ export interface Quantifier extends Span {
 
 export interface Mex extends Span {
 	type: "mex";
-	mex: MexSimple | MexFuha;
+	value: MexSimple | MexFuha;
 }
 
 export interface MexSimple extends Span {
@@ -760,7 +760,7 @@ export interface RpExpression extends Span {
 export interface Operator extends Span {
 	type: "operator";
 	first: Operator1;
-	// rest: JkOperator1[];
+	// TODO: rest: JkOperator1[];
 }
 
 // operator-1 = operator-2
@@ -770,7 +770,7 @@ export interface Operator extends Span {
 export interface Operator1 extends Span {
 	type: "operator-1";
 	first: Operator2;
-	// rest: JkBoOperator1 | undefined;
+	// TODO: rest: JkBoOperator1 | undefined;
 }
 
 // operator-2 = mex-operator | KE # operator /KEhE#/
@@ -778,6 +778,7 @@ export interface Operator1 extends Span {
 export interface Operator2 extends Span {
 	type: "operator-2";
 	operator: MexOperator;
+	// TODO: ke ke'e
 }
 
 // mex-operator =
@@ -830,6 +831,7 @@ export interface MexOperatorVuhu extends Span {
 export interface Operand extends Span {
 	type: "operand";
 	first: Operand1;
+	// TODO: connective
 }
 
 /// operand-1 = operand-2 [joik-ek operand-2]
@@ -880,7 +882,8 @@ export interface Operand3 extends Span {
 		| O3Mohe
 		| O3Johi
 		| O3Gek
-		| O3Lahe;
+		| O3Lahe
+		| O3Nahebo;
 }
 
 export interface O3Quantifier extends Span {
@@ -926,6 +929,14 @@ export interface O3Gek extends Span {
 export interface O3Lahe extends Span {
 	type: "o3-lahe";
 	lahe: CmavoWithFrees;
+	operand: Operand;
+	luhu: CmavoWithFrees | undefined;
+}
+
+export interface O3Nahebo extends Span {
+	type: "o3-nahebo";
+	nahe: TokenIndex;
+	bo: CmavoWithFrees;
 	operand: Operand;
 	luhu: CmavoWithFrees | undefined;
 }
