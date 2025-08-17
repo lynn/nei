@@ -7,6 +7,7 @@ export type Pattern =
 	| { type: "sequence"; patterns: Pattern[] }
 	| { type: "either"; patterns: Pattern[] }
 	| { type: "optional"; pattern: Pattern }
+	| { type: "not"; pattern: Pattern }
 	| { type: "end-of-stream" }
 	| Selmaho;
 
@@ -36,6 +37,10 @@ export function either(...patterns: Pattern[]): Pattern {
 
 export function opt(pattern: Pattern): Pattern {
 	return { type: "optional", pattern };
+}
+
+export function not(pattern: Pattern): Pattern {
+	return { type: "not", pattern };
 }
 
 export function endOfStream(): Pattern {
@@ -100,23 +105,21 @@ export function matchesPattern(
 	index: number,
 	pattern: Pattern,
 ): { end: number } | undefined {
-	console.log(tokens, index, pattern);
-	if (index >= tokens.length) return undefined;
 	const current = tokens[index];
 
 	if (typeof pattern === "string") {
-		return pattern === current.selmaho ? { end: index + 1 } : undefined;
+		return pattern === current?.selmaho ? { end: index + 1 } : undefined;
 	}
 
 	switch (pattern.type) {
 		case "among":
-			return pattern.selmaho.includes(current.selmaho)
+			return current !== undefined && pattern.selmaho.includes(current.selmaho)
 				? { end: index + 1 }
 				: undefined;
 		case "notAmong":
-			return !pattern.selmaho.includes(current.selmaho)
-				? { end: index + 1 }
-				: undefined;
+			return current !== undefined && pattern.selmaho.includes(current.selmaho)
+				? undefined
+				: { end: index + 1 };
 		case "many": {
 			let i = index;
 			for (let count = 0; count < pattern.min; count++) {
@@ -149,6 +152,10 @@ export function matchesPattern(
 			}
 			return undefined;
 		}
+		case "not":
+			return matchesPattern(tokens, index, pattern.pattern)
+				? undefined
+				: { end: index };
 		case "end-of-stream":
 			return index === tokens.length ? { end: index } : undefined;
 		default:

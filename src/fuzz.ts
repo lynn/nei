@@ -14,18 +14,21 @@ export function tokenPool(): string[] {
 }
 
 export function randomSentence(length: number) {
-	const start = Math.floor(Math.random() * (alis.length - length));
-	return alis
-		.split(/\s+/)
-		.slice(start, start + length)
-		.join(" ")
-		.replaceAll(/[«»]/g, "");
-	// const tokens = tokenPool();
-	// const result = [];
-	// for (let i = 0; i < length; i++) {
-	// 	result.push(tokens[Math.floor(Math.random() * tokens.length)]);
-	// }
-	// return result.join(" ");
+	if (Math.random() < 0.5) {
+		const start = Math.floor(Math.random() * (alis.length - length));
+		return alis
+			.split(/\s+/)
+			.slice(start, start + length)
+			.join(" ")
+			.replaceAll(/[^ .a-zA-Z']/g, "");
+	} else {
+		const tokens = tokenPool();
+		const result = [];
+		for (let i = 0; i < length; i++) {
+			result.push(tokens[Math.floor(Math.random() * tokens.length)]);
+		}
+		return result.join(" ");
+	}
 }
 
 export class Fuzzer {
@@ -49,7 +52,8 @@ export class Fuzzer {
 		try {
 			camxes.parse(sentence);
 			camxesSuccess = true;
-		} catch {
+		} catch (e) {
+			// console.log(e);
 			camxesSuccess = false;
 		}
 

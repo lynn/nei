@@ -117,6 +117,7 @@ import { BaseParser } from "./parse-base";
 import {
 	among,
 	either,
+	not,
 	opt,
 	patternPaMoi,
 	patternSumti,
@@ -1167,7 +1168,7 @@ export class Parser extends BaseParser {
 		if (this.isSumtiAhead()) {
 			return this.parseSumti();
 		}
-		if (this.isAhead(seq(patternTag, patternSumti))) {
+		if (this.isAhead(seq(patternTag, not(patternVerb)))) {
 			return this.parseTagged();
 		}
 
