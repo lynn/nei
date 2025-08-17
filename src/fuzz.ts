@@ -18,7 +18,8 @@ export function randomSentence(length: number) {
 	return alis
 		.split(/\s+/)
 		.slice(start, start + length)
-		.join(" ");
+		.join(" ")
+		.replaceAll(/[«»]/g, "");
 	// const tokens = tokenPool();
 	// const result = [];
 	// for (let i = 0; i < length; i++) {

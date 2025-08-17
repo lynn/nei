@@ -78,6 +78,7 @@ import type {
 	SpaceOffset,
 	Spacetime,
 	Span,
+	Stag,
 	Statement,
 	Statement1,
 	Statement2,
@@ -113,7 +114,17 @@ import type {
 	Zehapu,
 } from "./grammar";
 import { BaseParser } from "./parse-base";
-import { among, either, opt, patternVerb, seq } from "./pattern";
+import {
+	among,
+	either,
+	opt,
+	patternPaMoi,
+	patternSumti,
+	patternSumti6,
+	patternTag,
+	patternVerb,
+	seq,
+} from "./pattern";
 import { spanOf } from "./span";
 import { isTenseSelmaho, type Selmaho, type Token } from "./tokenize";
 
@@ -209,7 +220,9 @@ export class Parser extends BaseParser {
 		const i = this.tryParseCmavo("I");
 		if (i === undefined) return undefined;
 		const jk = this.tryParseJoik() ?? this.tryParseJek();
-		const stag = undefined; // TODO: this.tryParseStag();
+		const stag = this.isAhead(seq(patternTag, "BO"))
+			? this.tryParseStag()
+			: undefined;
 		const bo = this.tryParseCmavoWithFrees("BO");
 		if (bo === undefined) {
 			this.index = backtrack;
@@ -223,6 +236,14 @@ export class Parser extends BaseParser {
 			stag,
 			bo,
 		};
+	}
+
+	private tryParseStag(): Stag | undefined {
+		if (this.isTagAhead()) {
+			const first = this.parseSimpleTenseModal();
+			return { type: "stag", ...spanOf(first), first };
+		}
+		return undefined;
 	}
 
 	private tryParseNihos(): Nihos | undefined {
@@ -240,7 +261,7 @@ export class Parser extends BaseParser {
 	private parseParagraph(): Paragraph {
 		this.begin("paragraph");
 		const niho = this.tryParseNihos();
-		const first = this.parseTem();
+		const first = this.tryParseTem();
 		const rest: Item[] = [];
 		while (this.peekToken()?.selmaho === "I") {
 			const item = this.parseItem();
@@ -259,7 +280,7 @@ export class Parser extends BaseParser {
 	private parseItem(): Item {
 		this.begin("item");
 		const i = this.tryParseCmavoWithFrees("I");
-		const tem = this.parseTem();
+		const tem = this.tryParseTem();
 		return this.parsed("item", {
 			type: "item",
 			...spanOf(i, tem),
@@ -268,12 +289,12 @@ export class Parser extends BaseParser {
 		});
 	}
 
-	private parseTem(): Statement | Fragment {
+	private tryParseTem(): Statement | Fragment | undefined {
 		if (
 			this.isSumtiAhead() ||
-			this.isVerbAhead() ||
+			this.isNaVerbAhead() ||
 			this.isTaggedVerbAhead() ||
-			this.isTenseAhead()
+			this.isTagAhead()
 		) {
 			return this.parseStatement(true);
 		}
@@ -319,12 +340,11 @@ export class Parser extends BaseParser {
 			};
 		}
 
-		throw new ParseError("expected statement or fragment");
+		return undefined;
 	}
 
-	private isTenseAhead(): boolean {
-		const selmaho = this.peekToken()?.selmaho;
-		return selmaho !== undefined && isTenseSelmaho(selmaho);
+	private isTagAhead(): boolean {
+		return this.isAhead(patternTag);
 	}
 
 	private parseStatement(allowFragment: boolean): Statement | Fragment {
@@ -365,6 +385,15 @@ export class Parser extends BaseParser {
 		};
 	}
 
+	private isStatementAhead(): boolean {
+		return (
+			this.isNaVerbAhead() ||
+			this.isTaggedVerbAhead() ||
+			this.isSumtiAhead() ||
+			this.isTaggedSumtiAhead()
+		);
+	}
+
 	private parseStatement2(allowFragment: false): Statement2;
 	private parseStatement2(allowFragment: boolean): Statement2 | Fragment;
 	private parseStatement2(allowFragment: boolean): Statement2 | Fragment {
@@ -375,7 +404,9 @@ export class Parser extends BaseParser {
 		while (true) {
 			const ibo = this.tryParseIbo();
 			if (!ibo) break;
-			const statement2 = this.parseStatement2(false);
+			const statement2 = this.isStatementAhead()
+				? this.parseStatement2(false)
+				: undefined;
 			rest.push({
 				type: "ibo-statement-2",
 				...spanOf(ibo, statement2),
@@ -444,8 +475,12 @@ export class Parser extends BaseParser {
 		};
 	}
 
-	private isVerbAhead(): boolean {
+	private isPureVerbAhead(): boolean {
 		return this.isAhead(patternVerb);
+	}
+
+	private isNaVerbAhead(): boolean {
+		return this.isAhead(seq(opt("NA"), patternVerb));
 	}
 
 	private parseSelbri3(): Selbri3 {
@@ -453,7 +488,7 @@ export class Parser extends BaseParser {
 		const tanru: Many<Selbri4> = [first];
 
 		this.log("Is this selbri a tanru?", first);
-		while (this.isVerbAhead()) {
+		while (this.isPureVerbAhead()) {
 			const next = this.parseSelbri4();
 			tanru.push(next);
 		}
@@ -676,12 +711,7 @@ export class Parser extends BaseParser {
 	}
 
 	private isNumberMoiAhead(): boolean {
-		const backtrack = this.index;
-		const number = this.tryParseNamcu() ?? this.tryParseLerfuString();
-		const success =
-			number !== undefined && this.tryParseCmavo("MOI") !== undefined;
-		this.index = backtrack;
-		return success;
+		return this.isAhead(patternPaMoi);
 	}
 
 	private parseTanruUnit2(): TanruUnit2 {
@@ -862,7 +892,7 @@ export class Parser extends BaseParser {
 
 	private parseSumti5(): Sumti5 {
 		const outerQuantifier = this.tryParseQuantifier();
-		if (outerQuantifier && this.isVerbAhead()) {
+		if (outerQuantifier && this.isNaVerbAhead()) {
 			const selbri = this.parseSelbri();
 			const ku = this.tryParseCmavoWithFrees("KU");
 			const relativeClauses = this.tryParseRelativeClauses(selbri);
@@ -1059,12 +1089,7 @@ export class Parser extends BaseParser {
 	}
 
 	private isSumti6Ahead(): boolean {
-		return this.isAhead(
-			either(
-				seq("NAhE", "BO"),
-				among("LAhE", "KOhA", "BY", "LA", "LE", "LI", "QUOTE", "LU"),
-			),
-		);
+		return this.isAhead(patternSumti6);
 	}
 
 	private parseSumtiTail(): SumtiTail {
@@ -1095,50 +1120,15 @@ export class Parser extends BaseParser {
 	}
 
 	private isSumtiAhead(): boolean {
-		if (this.isSumti6Ahead()) {
-			return true;
-		}
-		if (this.isNumberMoiAhead()) {
-			return false;
-		}
-		return this.isAhead("PA");
+		return this.isAhead(patternSumti);
 	}
 
 	private isTaggedSumtiAhead(): boolean {
-		// kinda ugly
-		const oldIndex = this.index;
-		while (true) {
-			const selmaho = this.tokens[this.index]?.selmaho;
-			if (selmaho === "FIhO") return true;
-			if (isTenseSelmaho(selmaho)) {
-				this.index++;
-				continue;
-			}
-			break;
-		}
-		if (this.index === oldIndex) return false; // no tag
-
-		const ok = !this.isVerbAhead();
-		this.index = oldIndex;
-		return ok;
+		return this.isAhead(seq(patternTag, patternSumti));
 	}
 
 	private isTaggedVerbAhead(): boolean {
-		// kinda ugly
-		const oldIndex = this.index;
-		while (true) {
-			const selmaho = this.tokens[this.index]?.selmaho;
-			if (isTenseSelmaho(selmaho) || selmaho === "NA") {
-				this.index++;
-				continue;
-			}
-			break;
-		}
-		if (this.index === oldIndex) return false; // no tag
-
-		const ok = this.isVerbAhead();
-		this.index = oldIndex;
-		return ok;
+		return this.isAhead(seq(opt("NA"), patternTag, opt("NA"), patternVerb));
 	}
 
 	private parseTag(): Tag {
@@ -1177,7 +1167,7 @@ export class Parser extends BaseParser {
 		if (this.isSumtiAhead()) {
 			return this.parseSumti();
 		}
-		if (this.isTaggedSumtiAhead()) {
+		if (this.isAhead(seq(patternTag, patternSumti))) {
 			return this.parseTagged();
 		}
 
@@ -1231,7 +1221,7 @@ export class Parser extends BaseParser {
 		const cu =
 			headBridi.length() > 0 ? this.tryParseCmavoWithFrees("CU") : undefined;
 		if (
-			!this.isVerbAhead() &&
+			!this.isNaVerbAhead() &&
 			!this.isTaggedVerbAhead() &&
 			!cu &&
 			allowFragment
@@ -1576,8 +1566,11 @@ export class Parser extends BaseParser {
 		};
 	}
 
+	// #region tense
+
 	public parseTenseModal(): TenseModal {
 		const simpleTenseModal = this.parseSimpleTenseModal();
+
 		const frees = this.parseFrees();
 		return {
 			type: "tense-modal",
@@ -1626,7 +1619,6 @@ export class Parser extends BaseParser {
 		const ki = this.tryParseCmavo("KI");
 
 		if (tense === undefined && caha === undefined) {
-			console.log({ nahe, tense, caha, ki });
 			// We should never hit this because we predict it
 			throw new ParseError("Bad stm-tense", this.index);
 		}
@@ -1904,6 +1896,10 @@ export class Parser extends BaseParser {
 		};
 	}
 
+	// #endregion
+
+	// #region mex
+
 	private parseMex(): Mex {
 		const value = this.parseMexFuha() ?? this.parseMexSimple();
 		return { type: "mex", ...spanOf(value), value };
@@ -2035,6 +2031,8 @@ export class Parser extends BaseParser {
 			}
 		}
 	}
+
+	// #endregion
 }
 
 export type ParseResult = (

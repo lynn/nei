@@ -42,16 +42,34 @@ export function endOfStream(): Pattern {
 	return { type: "end-of-stream" };
 }
 
-export const patternPa = seq("PA", many(among("PA", "BY")), "PA");
-export const patternPaMoi = seq(patternPa, "MOI");
-export const patternPaMai = seq(patternPa, "MAI");
+export const patternNumber = seq(
+	"PA",
+	many(among("PA", "BY", "TEI", "FOI", "LAU")),
+);
+export const patternNumberOrLerfuString = many1(
+	among("PA", "BY", "TEI", "FOI", "LAU"),
+);
+export const patternPaMoi = seq(patternNumberOrLerfuString, "MOI");
+export const patternPaMai = seq(patternNumberOrLerfuString, "MAI");
 
 export const patternVerb = seq(
 	many(among("NAhE", "KE")),
 	among("BRIVLA", "GOhA", "ME", "SE", "JAI", "NU"),
 );
 
-export const patternTense = seq(
+export const patternSumti6 = either(
+	seq("NAhE", "BO"),
+	among("LAhE", "KOhA", "BY", "LA", "LE", "LI", "QUOTE", "LU"),
+);
+
+export const patternSumti = either(
+	seq(opt("PA"), patternSumti6),
+	seq("PA", patternVerb),
+);
+
+export const patternTag = seq(
+	opt("NAhE"),
+	opt("SE"),
 	either(
 		among(
 			"FA", // dubious but CLL says so
@@ -72,18 +90,17 @@ export const patternTense = seq(
 			"TAhE",
 			"ZAhO",
 		),
-		seq(patternPa, "ROI"),
+		seq(patternNumber, "ROI"),
 	),
 	opt("NAI"),
 );
-
-export const patternTenses = many1(patternTense);
 
 export function matchesPattern(
 	tokens: Token[],
 	index: number,
 	pattern: Pattern,
 ): { end: number } | undefined {
+	console.log(tokens, index, pattern);
 	if (index >= tokens.length) return undefined;
 	const current = tokens[index];
 

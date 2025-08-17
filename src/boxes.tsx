@@ -116,19 +116,29 @@ export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 						<ShowTokens start={paragraph.niho.start} end={paragraph.niho.end} />
 					</div>
 				)}
-				<ItemBox
-					item={{
-						type: "item",
-						i: undefined,
-						tem: paragraph.first,
-						start: paragraph.start,
-						end: paragraph.end,
-					}}
-				/>
-				{paragraph.rest.map((item) => (
-					<ItemBox item={item} />
-				))}
+				{paragraph.first !== undefined && (
+					<ItemBox
+						item={{
+							type: "item",
+							i: undefined,
+							tem: paragraph.first,
+							start: paragraph.start,
+							end: paragraph.end,
+						}}
+					/>
+				)}
+				{paragraph.rest.length > 0 &&
+					paragraph.rest.map((item) => <ItemBox item={item} />)}
 			</div>
+		</div>
+	);
+}
+
+export function IBox({ span }: { span: G.Span }) {
+	return (
+		<div className="box col bg-green-100">
+			<b>separator</b>
+			<ShowTokens start={span.start} end={span.end} />
 		</div>
 	);
 }
@@ -137,20 +147,18 @@ export function ItemBox({ item }: { item: G.Item }) {
 	return (
 		<div
 			className={`row box bg-gray-50 ${
-				item.tem.type === "statement" ? "" : "hatch"
+				item.tem?.type === "fragment" ? "hatch" : ""
 			} outline-none`}
 		>
 			{item.i && (
-				<div className="box col bg-green-100">
-					<b>separator</b>
-					<ShowTokens start={item.i.start} end={item.i.end} />
-				</div>
+				<IBox span={item.i} />
 			)}
-			{item.tem.type === "statement" ? (
-				<StatementBox statement={item.tem} />
-			) : (
-				<FragmentBox fragment={item.tem} />
-			)}
+			{item.tem &&
+				(item.tem.type === "statement" ? (
+					<StatementBox statement={item.tem} />
+				) : (
+					<FragmentBox fragment={item.tem} />
+				))}
 		</div>
 	);
 }
@@ -173,8 +181,8 @@ export function Statement1Box({ statement1 }: { statement1: G.Statement1 }) {
 			<Statement2Box statement2={statement1.first} />
 			{statement1.rest.map((r) => (
 				<div className="row">
-					<ShowSpan span={r.ijek} />
-					<Statement2Box statement2={r.statement2} />
+					<IBox span={r.ijek} />
+					{r.statement2 && <Statement2Box statement2={r.statement2} />}
 				</div>
 			))}
 		</div>
@@ -187,8 +195,8 @@ export function Statement2Box({ statement2 }: { statement2: G.Statement2 }) {
 			<Statement3Box statement3={statement2.first} />
 			{statement2.rest.map((r) => (
 				<div className="row">
-					<ShowSpan span={r.ibo} />
-					<Statement2Box statement2={r.statement2} />
+					<IBox span={r.ibo} />
+					{r.statement2 && <Statement2Box statement2={r.statement2} />}
 				</div>
 			))}
 		</div>

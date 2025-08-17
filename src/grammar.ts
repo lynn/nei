@@ -67,14 +67,14 @@ export interface Nihos extends Span {
 export interface Paragraph extends Span {
 	type: "paragraph";
 	niho: Nihos | undefined;
-	first: Statement | Fragment;
+	first: Statement | Fragment | undefined;
 	rest: Item[];
 }
 
 export interface Item extends Span {
 	type: "item";
 	i: CmavoWithFrees | undefined;
-	tem: Statement | Fragment;
+	tem: Statement | Fragment | undefined;
 }
 
 /// statement = statement-1 | prenex statement
@@ -102,7 +102,7 @@ export interface Ijek extends Span {
 export interface IjekStatement2 extends Span {
 	type: "ijek-statement-2";
 	ijek: Ijek;
-	statement2: Statement2;
+	statement2: Statement2 | undefined;
 }
 
 /// statement-2 = statement-3 [I [jek | joik] [stag] BO # [statement-2]]
@@ -124,7 +124,7 @@ export interface Ibo extends Span {
 export interface IboStatement2 extends Span {
 	type: "ibo-statement-2";
 	ibo: Ibo;
-	statement2: Statement2;
+	statement2: Statement2 | undefined;
 }
 
 /// statement-3 = sentence | [tag] TUhE # text-1 /TUhU#/
