@@ -685,7 +685,250 @@ export interface Quantifier extends Span {
 	boi: CmavoWithFrees | undefined;
 }
 
-/// mex = (snip)
+/// mex = mex-1 [operator mex-1] ... | FUhA # rp-expression
+
+export interface Mex extends Span {
+	type: "mex";
+	mex: MexSimple | MexFuha;
+}
+
+export interface MexSimple extends Span {
+	type: "mex-simple";
+	first: Mex1;
+	rest: OperatorMex1[];
+}
+
+export interface OperatorMex1 extends Span {
+	type: "operator-mex-1";
+	operator: Operator;
+	rest: Mex1;
+}
+
+export interface MexFuha extends Span {
+	type: "mex-fuha";
+	fuha: CmavoWithFrees;
+	rpExpression: RpExpression;
+}
+
+// mex-1 = mex-2 [BIhE # operator mex-1]
+
+export interface Mex1 extends Span {
+	type: "mex-1";
+	first: Mex2;
+	rest: BiheOperatorMex1 | undefined;
+}
+
+export interface BiheOperatorMex1 extends Span {
+	type: "bihe-operator-mex-1";
+	bihe: CmavoWithFrees;
+	operator: Operator;
+	rest: Mex1;
+}
+
+// mex-2 = operand | [PEhO #] operator mex-2 ... /KUhE#/
+
+export interface Mex2 extends Span {
+	type: "mex-2";
+	value: Mex2Operand | Mex2Polish;
+}
+
+export interface Mex2Operand extends Span {
+	type: "mex-2-operand";
+	operand: Operand;
+}
+
+export interface Mex2Polish extends Span {
+	type: "mex-2-polish";
+	peho: CmavoWithFrees | undefined;
+	operator: Operator;
+	arguments: Mex2[];
+	kuhe: CmavoWithFrees | undefined;
+}
+
+// rp-expression = rp-operand rp-operand operator
+// rp-operand = operand | rp-expression
+
+export interface RpExpression extends Span {
+	type: "rp-expression";
+	left: Operand | RpExpression;
+	right: Operand | RpExpression;
+	operator: Operator;
+}
+
+// operator = operator-1 [joik-jek operator-1 | joik [stag] KE # operator /KEhE#/] ...
+
+export interface Operator extends Span {
+	type: "operator";
+	first: Operator1;
+	// rest: JkOperator1[];
+}
+
+// operator-1 = operator-2
+//            | guhek operator-1 gik operator-2
+//            | operator-2 (jek | joik) [stag] BO # operator-1
+
+export interface Operator1 extends Span {
+	type: "operator-1";
+	first: Operator2;
+	// rest: JkBoOperator1 | undefined;
+}
+
+// operator-2 = mex-operator | KE # operator /KEhE#/
+
+export interface Operator2 extends Span {
+	type: "operator-2";
+	operator: MexOperator;
+}
+
+// mex-operator =
+//     | SE # mex-operator
+//     | NAhE # mex-operator
+//     | MAhO # mex /TEhU#/
+//     | NAhU # selbri /TEhU#/
+//     | VUhU #
+
+export type MexOperator =
+	| MexOperatorSe
+	| MexOperatorNahe
+	| MexOperatorMaho
+	| MexOperatorNahu
+	| MexOperatorVuhu;
+
+export interface MexOperatorSe extends Span {
+	type: "mex-operator-se";
+	se: CmavoWithFrees;
+	operator: MexOperator;
+}
+
+export interface MexOperatorNahe extends Span {
+	type: "mex-operator-nahe";
+	nahe: CmavoWithFrees;
+	operator: MexOperator;
+}
+
+export interface MexOperatorMaho extends Span {
+	type: "mex-operator-maho";
+	maho: CmavoWithFrees;
+	mex: Mex;
+	tehu: CmavoWithFrees | undefined;
+}
+
+export interface MexOperatorNahu extends Span {
+	type: "mex-operator-nahu";
+	nahu: CmavoWithFrees;
+	selbri: Selbri;
+	tehu: CmavoWithFrees | undefined;
+}
+
+export interface MexOperatorVuhu extends Span {
+	type: "mex-operator-vuhu";
+	vuhu: CmavoWithFrees;
+}
+
+/// operand = operand-1 [(ek | joik) [stag] KE # operand /KEhE#/]
+
+export interface Operand extends Span {
+	type: "operand";
+	first: Operand1;
+}
+
+/// operand-1 = operand-2 [joik-ek operand-2]
+
+export interface Operand1 extends Span {
+	type: "operand-1";
+	first: Operand2;
+	rest: JoikEkOperand2 | undefined;
+}
+
+export interface JoikEkOperand2 extends Span {
+	type: "joik-ek-operand-2";
+	joikEk: JoikEk;
+	operand: Operand2;
+}
+
+/// operand-2 = operand-3 [(ek | joik) [stag] BO # operand-2]
+
+export interface Operand2 extends Span {
+	type: "operand-2";
+	first: Operand3;
+	rest: JoikEkBoOperand2 | undefined;
+}
+
+export interface JoikEkBoOperand2 extends Span {
+	type: "joik-ek-bo-operand-2";
+	joikEk: Ek | Joik;
+	stag: Stag | undefined;
+	bo: CmavoWithFrees;
+	operand: Operand2;
+}
+
+/// operand-3 =
+///     quantifier
+///     | lerfu-string /BOI#/
+///     | NIhE # selbri /TEhU#/
+///     | MOhE # sumti /TEhU#/
+///     | JOhI # mex-2 ... /TEhU#/
+///     | gek operand gik operand-3
+///     | (LAhE # | NAhE BO #) operand /LUhU#/
+
+export interface Operand3 extends Span {
+	type: "operand-3";
+	value:
+		| O3Quantifier
+		| O3LerfuString
+		| O3Nihe
+		| O3Mohe
+		| O3Johi
+		| O3Gek
+		| O3Lahe;
+}
+
+export interface O3Quantifier extends Span {
+	type: "o3-quantifier";
+	quantifier: Quantifier;
+}
+
+export interface O3LerfuString extends Span {
+	type: "o3-lerfu-string";
+	lerfuString: LerfuString;
+	boi: CmavoWithFrees | undefined;
+}
+
+export interface O3Nihe extends Span {
+	type: "o3-nihe";
+	nihe: CmavoWithFrees;
+	selbri: Selbri;
+	tehu: CmavoWithFrees | undefined;
+}
+
+export interface O3Mohe extends Span {
+	type: "o3-mohe";
+	mohe: CmavoWithFrees;
+	sumti: Sumti<Floating>;
+	tehu: CmavoWithFrees | undefined;
+}
+
+export interface O3Johi extends Span {
+	type: "o3-johi";
+	johi: CmavoWithFrees;
+	mex: Many<Mex2>;
+	tehu: CmavoWithFrees | undefined;
+}
+
+export interface O3Gek extends Span {
+	type: "o3-gek";
+	gek: Gek;
+	left: Operand;
+	gik: Gik;
+	right: Operand3;
+}
+
+export interface O3Lahe extends Span {
+	type: "o3-lahe";
+	lahe: CmavoWithFrees;
+	operand: Operand;
+	luhu: CmavoWithFrees | undefined;
+}
 
 /// number = PA [PA | lerfu-word] ...
 

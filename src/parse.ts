@@ -101,27 +101,10 @@ import { among, either, opt, patternVerb, seq } from "./pattern";
 import { spanOf } from "./span";
 import { isTenseSelmaho, type Selmaho, type Token } from "./tokenize";
 
-interface TerbriState {
-	x: number;
-	// Bitset of filled positions
-	filled: bigint;
-}
-
 export interface Snapshot {
 	index: TokenIndex;
 	state: string[];
 	completed?: Span;
-}
-
-/**
- * State in the context of which a positional sumti can occur.
- * After saying "mi mutce nelci..." there is a Tertau hanging in the air
- * with `tertau` = nelci and `state` = {x:2, filled: {1}}.
- * After "mi zgana gi'e nelci vau..." there are two tails.
- */
-export interface TailState {
-	tertau: Span;
-	state: TerbriState;
 }
 
 export class Parser extends BaseParser {
