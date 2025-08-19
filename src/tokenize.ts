@@ -187,6 +187,7 @@ export class Tokenizer {
 			}
 			this.lineIndex++;
 		}
+		if (this.lohuSource !== undefined) throw new Error("unclosed lo'u");
 		return this.tokens;
 	}
 }
