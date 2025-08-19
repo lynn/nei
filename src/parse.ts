@@ -440,9 +440,7 @@ export class Parser extends BaseParser {
 
 	private parseSelbri(): Selbri {
 		this.begin("selbri");
-		const selmaho = this.peekToken()?.selmaho;
-		const tag =
-			selmaho && isTenseSelmaho(selmaho) ? this.parseTag() : undefined;
+		const tag = this.isTagAhead() ? this.parseTag() : undefined;
 		const selbri1 = this.parseSelbri1();
 		return this.parsed("selbri", {
 			type: "selbri",
@@ -929,7 +927,12 @@ export class Parser extends BaseParser {
 	private tryParseQuantifier(): Quantifier | undefined {
 		const token = this.peekToken();
 
-		if (token && token.selmaho === "PA") {
+		if (
+			token &&
+			token.selmaho === "PA" &&
+			!this.isNumberMaiAhead() &&
+			!this.isNumberMoiAhead()
+		) {
 			return this.parseQuantifier();
 		} else {
 			return undefined;
@@ -1140,7 +1143,10 @@ export class Parser extends BaseParser {
 	}
 
 	private isTaggedVerbAhead(): boolean {
-		return this.isAhead(seq(opt("NA"), patternTag, opt("NA"), patternVerb));
+		const decision = this.isAhead(
+			seq(opt("NA"), patternTag, opt("NA"), patternVerb),
+		);
+		return decision;
 	}
 
 	private parseTag(): Tag {
