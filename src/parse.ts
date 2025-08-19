@@ -2037,7 +2037,7 @@ export class Parser extends BaseParser {
 }
 
 export type ParseResult = (
-	| { success: true; tokens: Token[]; text: Text }
+	| { success: true; tokens: Token[]; text: Text; time: number }
 	| {
 			success: false;
 			error: ParseError;
@@ -2049,10 +2049,17 @@ export type ParseResult = (
 
 export function parse(tokens: Token[]): ParseResult {
 	const parser = new Parser(tokens);
+	const start = performance.now();
 	try {
 		const text = parser.parseText();
 		if (parser.index === parser.tokens.length) {
-			return { success: true, tokens, text, snapshots: parser.snapshots };
+			return {
+				success: true,
+				tokens,
+				text,
+				snapshots: parser.snapshots,
+				time: performance.now() - start,
+			};
 		} else {
 			// Incomplete parse
 			return {

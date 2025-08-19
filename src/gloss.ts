@@ -1785,7 +1785,6 @@ export function glossWord(
 	}
 
 	const analysis = analyseBrivla(word);
-	console.log({ analysis });
 	if (analysis.success && analysis.type.endsWith("LUJVO")) {
 		const partGlosses = getVeljvo(word).map((x) => glossWord(x, "BRIVLA"));
 		const parts = partGlosses.map((x) => (x && "gloss" in x ? x.gloss : ""));
@@ -1793,6 +1792,9 @@ export function glossWord(
 			return { gloss: parts.join("-") };
 		}
 	} else if (!analysis.success) {
+		if (analysis.problem.includes("cmevla")) {
+			return undefined;
+		}
 		if (/^[^aeiou][aeiou][^aeiou]/.test(word)) {
 			const insertY = `${word.slice(0, 3)}y${word.slice(3)}`;
 			const yAnalysis = analyseBrivla(insertY);
@@ -1813,6 +1815,9 @@ export function glossWord(
 				};
 			}
 		}
-		return { problem: true, gloss: analysis.problem.replace(/:? \{[^{}]*\}$/, "") };
+		return {
+			problem: true,
+			gloss: analysis.problem.replace(/:? \{[^{}]*\}$/, ""),
+		};
 	}
 }

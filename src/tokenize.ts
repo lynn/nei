@@ -46,6 +46,12 @@ export interface Token {
 }
 
 export class Tokenizer {
+	cmevlaBrivlaMerger: boolean;
+
+	constructor({ cmevlaBrivlaMerger }: { cmevlaBrivlaMerger: boolean }) {
+		this.cmevlaBrivlaMerger = cmevlaBrivlaMerger;
+	}
+
 	private lineIndex = 1;
 	private tokens: Token[] = [];
 	private erased: string[] = [];
@@ -152,7 +158,11 @@ export class Tokenizer {
 				} else {
 					// It's a brivla, or an attempt at one.
 					const lexeme = wordToLexeme(word[0]);
-					this.push([wordStart, wordEnd], word[0], lexeme, getSelmaho(lexeme));
+					let selmaho = getSelmaho(lexeme);
+					if (this.cmevlaBrivlaMerger && selmaho === "CMEVLA") {
+						selmaho = "BRIVLA";
+					}
+					this.push([wordStart, wordEnd], word[0], lexeme, selmaho);
 				}
 			}
 			this.lineIndex++;
@@ -168,6 +178,6 @@ export function wordToLexeme(word: string): string {
 export function getSelmaho(lexeme: string): Selmaho {
 	return (
 		(cmavo as Record<string, Selmaho>)[lexeme] ??
-		(/[aeiou]$/.test(lexeme) ? "BRIVLA" : "CMEVLA")
+		(/[aeiou]$/.test(lexeme.replaceAll(/\./g, "")) ? "BRIVLA" : "CMEVLA")
 	);
 }
