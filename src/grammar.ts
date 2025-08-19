@@ -435,17 +435,30 @@ export interface SumtiTail1 extends Span {
 
 export interface RelativeClauses extends Span {
 	type: "relative-clauses";
-	first: RelativeClause;
-	// TODO: zi'e
+	first: GoiClause | NoiClause;
+	rest: ZiheClause[];
 }
 
-export interface RelativeClause extends Span {
-	type: "relative-clause";
+export interface GoiClause extends Span {
+	type: "goi-clause";
+	antecedent: Span | undefined;
+	goi: CmavoWithFrees;
+	term: Term<Floating>;
+	gehu: CmavoWithFrees | undefined;
+}
+
+export interface NoiClause extends Span {
+	type: "noi-clause";
 	antecedent: Span | undefined;
 	noi: CmavoWithFrees;
 	subsentence: Subsentence;
 	kuho: CmavoWithFrees | undefined;
-	// TODO: goi
+}
+
+export interface ZiheClause extends Span {
+	type: "zihe-clause";
+	zihe: CmavoWithFrees;
+	relativeClause: GoiClause | NoiClause;
 }
 
 /// selbri = [tag] selbri-1

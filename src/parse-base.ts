@@ -110,7 +110,9 @@ export class BaseParser {
 		let end = first.end;
 		const rest: (Pa | LerfuWord)[] = [];
 		while (true) {
+			const peek = this.peekToken();
 			const next = this.tryParsePa() ?? this.tryParseLerfuWord();
+			console.log(this.index, peek, this.tokens, next);
 			if (!next) break;
 			end = next.end;
 			rest.push(next);

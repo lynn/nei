@@ -24,6 +24,7 @@ import type {
 	GihekTail,
 	GihekWithFrees,
 	Gik,
+	GoiClause,
 	Guhek,
 	Ibo,
 	IboStatement2,
@@ -955,16 +956,36 @@ export class Parser extends BaseParser {
 	private tryParseRelativeClauses(
 		antecedent: Span | undefined,
 	): RelativeClauses | undefined {
-		const relativeClause = this.tryParseRelativeClause(antecedent);
+		const relativeClause =
+			this.tryParseGoiClause(antecedent) ?? this.tryParseNoiClause(antecedent);
 		if (!relativeClause) return undefined;
 		return {
 			type: "relative-clauses",
 			...spanOf(relativeClause),
 			first: relativeClause,
+			rest: [],
 		};
 	}
 
-	private tryParseRelativeClause(
+	private tryParseGoiClause(
+		antecedent: Span | undefined,
+	): GoiClause | undefined {
+		const goi = this.tryParseCmavoWithFrees("GOI");
+		if (!goi) return undefined;
+		const term = this.tryParseTerm();
+		if (!term) return undefined;
+		const gehu = this.tryParseCmavoWithFrees("GEhU");
+		return {
+			type: "goi-clause",
+			...spanOf(goi, term, gehu),
+			antecedent,
+			goi,
+			term,
+			gehu,
+		};
+	}
+
+	private tryParseNoiClause(
 		antecedent: Span | undefined,
 	): RelativeClause | undefined {
 		const noi = this.tryParseCmavoWithFrees("NOI");

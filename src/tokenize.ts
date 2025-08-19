@@ -153,7 +153,7 @@ export class Tokenizer {
 				this.tokens.push(newToken);
 			}
 			this.lastZo = lexeme === "zo";
-			this.lastBahe = lexeme === "ba'e";
+			this.lastBahe = selmaho === "BAhE";
 			this.erased = [];
 		}
 	}

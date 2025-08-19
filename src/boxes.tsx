@@ -775,11 +775,46 @@ export function RelativeClausesBox({ span }: { span: G.RelativeClauses }) {
 	return (
 		<div className="row">
 			<RelativeClauseBox span={span.first} />
+			{span.rest.map((clause, index) => (
+				<ZiheClauseBox key={index} span={clause} />
+			))}
 		</div>
 	);
 }
 
-export function RelativeClauseBox({ span }: { span: G.RelativeClause }) {
+export function RelativeClauseBox({
+	span,
+}: {
+	span: G.GoiClause | G.NoiClause;
+}) {
+	return span.type === "goi-clause" ? (
+		<GoiClauseBox span={span} />
+	) : (
+		<NoiClauseBox span={span} />
+	);
+}
+
+export function GoiClauseBox({ span }: { span: G.GoiClause }) {
+	return (
+		<div className="box col bg-gray-50">
+			<b>
+				relative clause{" "}
+				{span.antecedent && (
+					<span>
+						to <i>{spanToString(span.antecedent)}</i>
+					</span>
+				)}
+			</b>
+			<div className="row">
+				<ShowSpan span={span.goi} />
+				<TermBox term={span.term} />
+				{span.gehu && <ShowSpan span={span.gehu} />}
+			</div>
+		</div>
+	);
+}
+
+export function NoiClauseBox({ span }: { span: G.NoiClause }) {
 	return (
 		<div className="box col bg-gray-50">
 			<b>
@@ -799,6 +834,16 @@ export function RelativeClauseBox({ span }: { span: G.RelativeClause }) {
 					<i className="opacity-50 py-1">(ku'o)</i>
 				)}
 			</div>
+		</div>
+	);
+}
+
+export function ZiheClauseBox({ span }: { span: G.ZiheClause }) {
+	return (
+		<div className="box col bg-gray-50">
+			<b>relative clause</b>
+			<ShowSpan span={span.zihe} />
+			<RelativeClauseBox span={span.relativeClause} />
 		</div>
 	);
 }
