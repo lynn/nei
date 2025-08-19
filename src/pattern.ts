@@ -59,7 +59,7 @@ export const patternPaMai = seq(patternNumberOrLerfuString, "MAI");
 
 export const patternVerb = seq(
 	many(among("NAhE", "KE")),
-	among("BRIVLA", "GOhA", "ME", "SE", "JAI", "NU"),
+	either(among("BRIVLA", "GOhA", "ME", "SE", "JAI", "NU"), patternPaMoi),
 );
 
 export const patternSumti6 = either(
@@ -68,8 +68,8 @@ export const patternSumti6 = either(
 );
 
 export const patternSumti = either(
-	seq(opt("PA"), patternSumti6),
-	seq("PA", patternVerb),
+	seq(many("PA"), patternSumti6),
+	seq(many1("PA"), patternVerb),
 );
 
 export const patternTag = seq(

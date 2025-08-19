@@ -30,6 +30,7 @@ export interface Text extends Span {
 	type: "text";
 	pretext: Pretext | undefined;
 	text1: Text1;
+	faho: number | undefined;
 }
 
 export interface Pretext extends Span {
@@ -424,7 +425,7 @@ export interface SumtiTail extends Span {
 
 export interface SumtiTail1 extends Span {
 	type: "sumti-tail-1";
-	// TODO: quantifiers and stuff
+	quantifier: Quantifier | undefined;
 	selbri: Selbri;
 	relativeClauses: RelativeClauses | undefined;
 }
@@ -1269,7 +1270,7 @@ export interface Indicator extends Span {
 export interface FreeSei extends Span {
 	type: "free-sei";
 	sei: CmavoWithFrees;
-	terms: Terms<Positional>;
+	terms: Terms<Positional> | undefined;
 	cu: CmavoWithFrees | undefined;
 	selbri: Selbri;
 	sehu: TokenIndex | undefined;

@@ -121,6 +121,7 @@ import {
 	either,
 	not,
 	opt,
+	patternPaMai,
 	patternPaMoi,
 	patternSumti,
 	patternSumti6,
@@ -138,15 +139,17 @@ export interface Snapshot {
 }
 
 export class Parser extends BaseParser {
-	public parseText(): Text {
+	public parseText(topLevel: boolean = true): Text {
 		this.begin("text");
 		const pretext = this.tryParsePretext();
 		const text1 = this.parseText1();
+		const faho = topLevel ? this.tryParseCmavo("FAhO") : undefined;
 		return this.parsed("text", {
 			type: "text",
-			...spanOf(pretext, text1),
+			...spanOf(pretext, text1, faho),
 			pretext: pretext,
 			text1,
+			faho,
 		});
 	}
 
@@ -540,7 +543,7 @@ export class Parser extends BaseParser {
 		const backtrack = this.index;
 		const jk = this.tryParseJoik() ?? this.tryParseJek();
 		if (!jk) return undefined;
-		const stag = undefined; // TODO this.tryParseStag();
+		const stag = this.tryParseStag();
 		const bo = this.tryParseCmavoWithFrees("BO");
 		if (bo === undefined) {
 			this.index = backtrack;
@@ -715,6 +718,10 @@ export class Parser extends BaseParser {
 
 	private isNumberMoiAhead(): boolean {
 		return this.isAhead(patternPaMoi);
+	}
+
+	private isNumberMaiAhead(): boolean {
+		return this.isAhead(patternPaMai);
 	}
 
 	private parseTanruUnit2(): TanruUnit2 {
@@ -1002,7 +1009,7 @@ export class Parser extends BaseParser {
 
 		if (token.selmaho === "LU") {
 			const lu = this.nextToken()!;
-			const text = this.parseText();
+			const text = this.parseText(false);
 			const lihu = this.tryParseCmavoWithFrees("LIhU");
 			return {
 				type: "sumti-6-lu",
@@ -1054,7 +1061,7 @@ export class Parser extends BaseParser {
 
 		if (token.selmaho === "LA") {
 			const la = this.tryParseCmavoWithFrees("LA")!;
-			// TODO: relative clauses...
+			const relativeClauses = this.tryParseRelativeClauses(la);
 			const names = this.zeroOrMore("CMEVLA");
 			const frees = this.parseFrees();
 			if (names.length) {
@@ -1062,7 +1069,7 @@ export class Parser extends BaseParser {
 					type: "sumti-6-la",
 					...spanOf(la, names, frees),
 					la,
-					relativeClauses: undefined,
+					relativeClauses,
 					cmevlas: names,
 					frees,
 				};
@@ -1112,11 +1119,13 @@ export class Parser extends BaseParser {
 	}
 
 	private parseSumtiTail1(): SumtiTail1 {
+		const quantifier = this.tryParseQuantifier();
 		const selbri = this.parseSelbri();
 		const relativeClauses = this.tryParseRelativeClauses(selbri);
 		return {
 			type: "sumti-tail-1",
-			...spanOf(selbri, relativeClauses),
+			...spanOf(quantifier, selbri, relativeClauses),
+			quantifier,
 			selbri,
 			relativeClauses,
 		};
@@ -1500,7 +1509,32 @@ export class Parser extends BaseParser {
 		const indicator = this.tryParseIndicator();
 		if (indicator) return indicator;
 
-		if (token?.selmaho === "COI") {
+		if (token?.selmaho === "SEI") {
+			const sei = this.tryParseCmavoWithFrees("SEI")!;
+			const bridi = new HeadBridi();
+			const headTerms = this.tryParseTerms();
+			for (const term of headTerms?.terms ?? []) {
+				bridi.place(term, this.tokens);
+			}
+			const tailBridi = bridi.finish();
+			const cu = this.tryParseCmavoWithFrees("CU");
+			const selbri = this.parseSelbri();
+			tailBridi.openGroup(this.extractTertau(selbri, "tail"));
+			tailBridi.closeGroup();
+			const terms = tailBridi.placeHeadTerms();
+			const sehu = this.tryParseCmavo("SEhU");
+			return {
+				type: "free-sei",
+				...spanOf(sei, terms, cu, selbri, sehu),
+				sei,
+				terms,
+				cu,
+				selbri,
+				sehu,
+			};
+		}
+
+		if (token?.selmaho === "COI" || token?.selmaho === "DOI") {
 			const vocative = this.parseVocative();
 			const relativeClauses = this.tryParseRelativeClauses(undefined);
 			const argument = this.tryParseVocativeArgument();
@@ -1514,6 +1548,30 @@ export class Parser extends BaseParser {
 				argument,
 				relativeClauses2,
 				dohu,
+			};
+		}
+
+		if (this.isNumberMaiAhead()) {
+			const ordinal = this.tryParseNamcu() ?? this.tryParseLerfuString()!;
+			const mai = this.tryParseCmavo("MAI")!;
+			return {
+				type: "free-mai",
+				...spanOf(ordinal, mai),
+				ordinal,
+				mai,
+			};
+		}
+
+		if (token?.selmaho === "TO") {
+			const to = this.tryParseCmavo("TO")!;
+			const text = this.parseText(false);
+			const toi = this.tryParseCmavo("TOI");
+			return {
+				type: "free-to",
+				...spanOf(to, text, toi),
+				to,
+				text,
+				toi,
 			};
 		}
 

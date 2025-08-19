@@ -76,7 +76,7 @@ export function ShowParseResult({ output }: { output: ParseResult }) {
 							<TextBox text={output.consumed} remainder={output.remainder} />
 						</TokenContext.Provider>
 					)}
-					{/* <ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} /> */}
+					<ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} />
 				</div>
 			</div>
 		);
@@ -87,7 +87,7 @@ export function ShowParseResult({ output }: { output: ParseResult }) {
 				<TokenContext.Provider value={output.tokens}>
 					<TextBox text={output.text} />
 				</TokenContext.Provider>
-				{/* <ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} /> */}
+				<ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} />
 			</div>
 		</div>
 	);
@@ -95,7 +95,7 @@ export function ShowParseResult({ output }: { output: ParseResult }) {
 
 export function Io(props: IoProps) {
 	return (
-		<div class="mb-8 border border-gray-200 border-2 rounded">
+		<div class="mb-8 border-gray-200 border-2 rounded">
 			<div class="input mb-4 italic bg-gray-200 p-2">
 				<pre>{props.input}</pre>
 			</div>
@@ -140,7 +140,7 @@ export function App() {
 			<header class="flex flex-row items-baseline gap-4 p-4 bg-violet-950 text-white">
 				<h1 class="text-3xl font-bold">la nei</h1>
 				<div class="opacity-75">
-					recursive Lojban parser — Code on{" "}
+					recursive Lojban parser — code on{" "}
 					<a class="underline" href="https://github.com/lynn/nei">
 						GitHub
 					</a>

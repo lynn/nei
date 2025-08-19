@@ -45,10 +45,18 @@ body,
 	@apply outline px-2 pt-2 rounded-t w-fit;
 }
 
+.box-small {
+	@apply outline px-1 rounded-t;
+}
+
 .box.bridi-tail {
 	@apply outline px-2 pt-2 rounded-none w-fit;
 }
 
 .box > b {
 	@apply font-normal text-xs place-self-start -mt-2 mb-2;
+}
+
+.box-small > b {
+	@apply font-normal text-xs place-self-start;
 }

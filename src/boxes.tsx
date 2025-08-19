@@ -80,8 +80,13 @@ export function TextBox({
 			{text.pretext && <PretextBox pretext={text.pretext} />}
 			<Text1Box text1={text.text1} />
 			{remainder !== undefined && (
-				<div className="bg-red-200 px-2">
+				<div className="bg-red-200">
 					<ShowSpan span={remainder} />
+				</div>
+			)}
+			{text.faho && (
+				<div className="opacity-50 pl-2">
+					<ShowTokens start={text.faho} end={text.faho} />
 				</div>
 			)}
 		</div>
@@ -102,7 +107,7 @@ export function Text1Box({ text1 }: { text1: G.Text1 }) {
 		<div className="row">
 			{text1.firstSeparator && (
 				<div className="box col bg-green-100">
-					<b>initial separator</b>
+					<b>separator</b>
 					<ShowSpan span={text1.firstSeparator} />
 				</div>
 			)}
@@ -133,8 +138,12 @@ export function ParagraphBox({ paragraph }: { paragraph: G.Paragraph }) {
 						}}
 					/>
 				)}
-				{paragraph.rest.length > 0 &&
-					paragraph.rest.map((item) => <ItemBox item={item} />)}
+				{paragraph.rest.map((item) => (
+					<ItemBox item={item} />
+				))}
+				{paragraph.first === undefined && paragraph.rest.length === 0 ? (
+					<i className="opacity-50 italic mb-2 text-sm">(empty paragraph)</i>
+				) : undefined}
 			</div>
 		</div>
 	);
@@ -652,6 +661,14 @@ export function SumtiBox({
 	);
 }
 
+export function QuantifierBox({ span }: { span: G.Quantifier }) {
+	return (
+		<div className="box-small flex flex-col bg-orange-200">
+			<ShowSpan span={span} />
+		</div>
+	);
+}
+
 export function Sumti1Box({ span }: { span: G.Sumti1 }) {
 	return <Sumti2Box span={span.sumti2} />;
 }
@@ -679,7 +696,7 @@ export function Sumti5Box({ span }: { span: G.Sumti5 }) {
 export function Sumti5SmallBox({ span }: { span: G.Sumti5Small }) {
 	return (
 		<div className="row">
-			{span.quantifier && <ShowSpan span={span.quantifier} />}
+			{span.quantifier && <QuantifierBox span={span.quantifier} />}
 			<SelbriBox selbri={span.selbri} isVerb={false} />
 			{span.relativeClauses && (
 				<RelativeClausesBox span={span.relativeClauses} />
@@ -691,7 +708,7 @@ export function Sumti5SmallBox({ span }: { span: G.Sumti5Small }) {
 export function Sumti5LargeBox({ span }: { span: G.Sumti5Large }) {
 	return (
 		<div className="row">
-			{span.outerQuantifier && <ShowSpan span={span.outerQuantifier} />}
+			{span.outerQuantifier && <QuantifierBox span={span.outerQuantifier} />}
 			<Sumti6Box span={span.sumti6} />
 			{span.relativeClauses && (
 				<RelativeClausesBox span={span.relativeClauses} />
@@ -745,6 +762,7 @@ export function SumtiTailBox({ span }: { span: G.SumtiTail }) {
 export function SumtiTail1Box({ span }: { span: G.SumtiTail1 }) {
 	return (
 		<div className="row">
+			{span.quantifier && <QuantifierBox span={span.quantifier} />}
 			{span.selbri && <SelbriBox selbri={span.selbri} isVerb={false} />}
 			{span.relativeClauses && (
 				<RelativeClausesBox span={span.relativeClauses} />
