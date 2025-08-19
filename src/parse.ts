@@ -118,7 +118,6 @@ import type {
 import { BaseParser } from "./parse-base";
 import {
 	among,
-	either,
 	not,
 	opt,
 	patternPaMai,
@@ -130,7 +129,7 @@ import {
 	seq,
 } from "./pattern";
 import { spanOf } from "./span";
-import { isTenseSelmaho, type Selmaho, type Token } from "./tokenize";
+import type { Selmaho, Token } from "./tokenize";
 
 export interface Snapshot {
 	index: TokenIndex;
@@ -778,8 +777,11 @@ export class Parser extends BaseParser {
 		}
 
 		if (this.isNumberMoiAhead()) {
-			const namcu = this.tryParseNamcu() ?? this.tryParseLerfuString()!;
-			const moi = this.tryParseCmavoWithFrees("MOI")!;
+			const namcu = this.tryParseNamcu() ?? this.tryParseLerfuString();
+			const moi = this.tryParseCmavoWithFrees("MOI");
+			if (namcu === undefined || moi === undefined) {
+				throw new ParseError("Bad tu-moi", this.index);
+			}
 			return {
 				type: "tu-moi",
 				...spanOf(namcu, moi),
@@ -1558,8 +1560,11 @@ export class Parser extends BaseParser {
 		}
 
 		if (this.isNumberMaiAhead()) {
-			const ordinal = this.tryParseNamcu() ?? this.tryParseLerfuString()!;
-			const mai = this.tryParseCmavo("MAI")!;
+			const ordinal = this.tryParseNamcu() ?? this.tryParseLerfuString();
+			const mai = this.tryParseCmavo("MAI");
+			if (ordinal === undefined || mai === undefined) {
+				throw new ParseError("Bad free-mai", this.index);
+			}
 			return {
 				type: "free-mai",
 				...spanOf(ordinal, mai),

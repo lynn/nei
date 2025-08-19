@@ -41,6 +41,7 @@ export class Fuzzer {
 	public fuzzOnce() {
 		const length = Math.floor(Math.random() * 10) + 2;
 		const sentence = randomSentence(length);
+		console.log(`\x1b[A\x1b[2K${sentence}`);
 		let ourSuccess: boolean;
 		try {
 			const tokens = new Tokenizer({ cmevlaBrivlaMerger: false }).tokenize(
@@ -66,12 +67,14 @@ export class Fuzzer {
 				this.bothParse++;
 			} else {
 				this.mistakes++;
-				console.log("we parse, camxes rejects:", sentence);
+				console.log("\x1b[A\x1b[2Kwe parse, camxes rejects:", sentence);
+				console.log();
 			}
 		} else {
 			if (camxesSuccess) {
 				this.mistakes++;
-				console.log("we reject, camxes parses:", sentence);
+				console.log("\x1b[A\x1b[2Kwe reject, camxes parses:", sentence);
+				console.log();
 			} else {
 				this.bothReject++;
 			}

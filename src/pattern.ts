@@ -104,7 +104,9 @@ export function matchesPattern(
 	tokens: Token[],
 	index: number,
 	pattern: Pattern,
+	depth: number = 0,
 ): { end: number } | undefined {
+	if (depth > 100) throw new Error("depth limit exceeded");
 	const current = tokens[index];
 
 	if (typeof pattern === "string") {
@@ -123,12 +125,12 @@ export function matchesPattern(
 		case "many": {
 			let i = index;
 			for (let count = 0; count < pattern.min; count++) {
-				const first = matchesPattern(tokens, i, pattern.pattern);
+				const first = matchesPattern(tokens, i, pattern.pattern, depth + 1);
 				if (!first) return undefined;
 				i = first.end;
 			}
 			while (true) {
-				const next = matchesPattern(tokens, i, pattern.pattern);
+				const next = matchesPattern(tokens, i, pattern.pattern, depth + 1);
 				if (!next) break;
 				i = next.end;
 			}
@@ -137,23 +139,27 @@ export function matchesPattern(
 		case "sequence": {
 			let i = index;
 			for (const subpattern of pattern.patterns) {
-				const next = matchesPattern(tokens, i, subpattern);
+				const next = matchesPattern(tokens, i, subpattern, depth + 1);
 				if (!next) return undefined;
 				i = next.end;
 			}
 			return { end: i };
 		}
 		case "optional":
-			return matchesPattern(tokens, index, pattern.pattern) || { end: index };
+			return (
+				matchesPattern(tokens, index, pattern.pattern, depth + 1) || {
+					end: index,
+				}
+			);
 		case "either": {
 			for (const subpattern of pattern.patterns) {
-				const next = matchesPattern(tokens, index, subpattern);
+				const next = matchesPattern(tokens, index, subpattern, depth + 1);
 				if (next) return next;
 			}
 			return undefined;
 		}
 		case "not":
-			return matchesPattern(tokens, index, pattern.pattern)
+			return matchesPattern(tokens, index, pattern.pattern, depth + 1)
 				? undefined
 				: { end: index };
 		case "end-of-stream":
