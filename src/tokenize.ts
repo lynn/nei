@@ -141,12 +141,14 @@ export class Tokenizer {
 			if (
 				last !== undefined &&
 				(last.selmaho === "FAhO" ||
-					(selmaho === "FUhE" && last.indicators.length === 0) ||
+					selmaho === "FUhE" ||
 					["UI", "CAI", "Y", "DAhO", "FUhO"].includes(selmaho) ||
 					(selmaho === "NAI" &&
 						["UI", "CAI"].includes(last.indicators.at(-1)?.selmaho ?? "")))
 			) {
 				last.indicators.push(newToken);
+			} else if (last?.indicators?.at(-1)?.selmaho === "FUhE") {
+				throw new Error("FUhE must be followed by another indicator");
 			} else {
 				this.tokens.push(newToken);
 			}
