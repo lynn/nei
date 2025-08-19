@@ -14,6 +14,7 @@ import type {
 	CeiTanruUnit1,
 	CmavoWithFrees,
 	Cmene,
+	Coinai,
 	Ek,
 	EkWithFrees,
 	Floating,
@@ -110,6 +111,7 @@ import type {
 	TimeOffset,
 	Timespace,
 	TokenIndex,
+	Vocative,
 	Vxha,
 	Zehapu,
 } from "./grammar";
@@ -1456,12 +1458,64 @@ export class Parser extends BaseParser {
 		}
 	}
 
+	private tryParseVocativeArgument():
+		| Selbri
+		| Sumti<Floating>
+		| Cmene
+		| undefined {
+		const cmene = this.tryParseCmene();
+		if (cmene) return cmene;
+		return this.isNaVerbAhead()
+			? this.parseSelbri()
+			: this.isSumtiAhead()
+				? this.parseSumti()
+				: undefined;
+	}
+
+	private parseVocative(): Vocative {
+		const coinais = this.parseCoinais();
+		const doi = this.tryParseCmavo("DOI");
+		return { type: "vocative", ...spanOf(coinais, doi), coinais, doi };
+	}
+
+	private parseCoinais(): Coinai[] {
+		const coinais: Coinai[] = [];
+		while (true) {
+			const coinai = this.tryParseCoinai();
+			if (!coinai) break;
+			coinais.push(coinai);
+		}
+		return coinais;
+	}
+
+	private tryParseCoinai(): Coinai | undefined {
+		const coi = this.tryParseCmavo("COI");
+		if (coi === undefined) return undefined;
+		const nai = this.tryParseCmavo("NAI");
+		return { type: "coinai", ...spanOf(coi, nai), coi, nai };
+	}
+
 	protected tryParseFree(): Free | undefined {
 		const token = this.peekToken();
 		const indicator = this.tryParseIndicator();
 		if (indicator) return indicator;
 
-		// TODO: sei, vocative, mai, to
+		if (token?.selmaho === "COI") {
+			const vocative = this.parseVocative();
+			const relativeClauses = this.tryParseRelativeClauses(undefined);
+			const argument = this.tryParseVocativeArgument();
+			const relativeClauses2 = this.tryParseRelativeClauses(relativeClauses);
+			const dohu = this.tryParseCmavo("DOhU");
+			return {
+				type: "free-vocative",
+				...spanOf(vocative, relativeClauses, argument, relativeClauses2, dohu),
+				vocative,
+				relativeClauses,
+				argument,
+				relativeClauses2,
+				dohu,
+			};
+		}
 
 		if (token?.selmaho === "XI") {
 			const xi = this.tryParseCmavoWithFrees("XI")!;
@@ -1648,7 +1702,7 @@ export class Parser extends BaseParser {
 
 	private tryParseSpacetime(): Spacetime | undefined {
 		const space = this.tryParseSpace();
-		if (!space) return undefined;
+		if (space === undefined) return undefined;
 		const time = this.tryParseTime();
 		return {
 			type: "spacetime",
@@ -1660,6 +1714,7 @@ export class Parser extends BaseParser {
 
 	private tryParseTime(): Time | undefined {
 		const backtrack = this.index;
+		this.begin("time");
 		let start: number | undefined;
 		let end: number | undefined;
 
@@ -1694,17 +1749,18 @@ export class Parser extends BaseParser {
 		}
 
 		if (start !== undefined && end !== undefined) {
-			return {
-				type: "time",
+			return this.parsed("time", {
+				type: "time" as const,
 				start,
 				end,
 				zi,
 				timeOffsets,
 				zehapu,
 				intervalProperties,
-			};
+			});
 		} else {
 			this.index = backtrack;
+			this.end();
 			return undefined;
 		}
 	}
@@ -1725,7 +1781,7 @@ export class Parser extends BaseParser {
 
 	private tryParseIntervalProperty(): IntervalProperty | undefined {
 		const taheOrZaho = this.tryParseCmavo("TAhE") ?? this.tryParseCmavo("ZAhO");
-		if (taheOrZaho) {
+		if (taheOrZaho !== undefined) {
 			const nai = this.tryParseCmavo("NAI");
 			return {
 				type: "interval-property-cmavo",
@@ -1737,9 +1793,9 @@ export class Parser extends BaseParser {
 
 		const backtrack = this.index;
 		const number = this.tryParseNamcu();
-		if (!number) return undefined;
+		if (number === undefined) return undefined;
 		const roi = this.tryParseCmavo("ROI");
-		if (!roi) {
+		if (roi === undefined) {
 			this.index = backtrack;
 			return undefined;
 		}
@@ -1768,6 +1824,7 @@ export class Parser extends BaseParser {
 	}
 
 	private tryParseSpace(): Space | undefined {
+		this.begin("space");
 		const backtrack = this.index;
 		let start: number | undefined;
 		let end: number | undefined;
@@ -1802,17 +1859,18 @@ export class Parser extends BaseParser {
 		}
 
 		if (start !== undefined && end !== undefined) {
-			return {
-				type: "space",
+			return this.parsed("space", {
+				type: "space" as const,
 				start,
 				end,
 				va,
 				spaceOffsets,
 				spaceIntervals,
 				motion,
-			};
+			});
 		} else {
 			this.index = backtrack;
+			this.end();
 			return undefined;
 		}
 	}
@@ -1855,7 +1913,7 @@ export class Parser extends BaseParser {
 
 			spaceIntProps.push(next);
 		}
-		if (vxha !== undefined && spaceIntProps.length) {
+		if (vxha !== undefined || spaceIntProps.length) {
 			return {
 				type: "space-interval",
 				...spanOf(vxha, spaceIntProps),

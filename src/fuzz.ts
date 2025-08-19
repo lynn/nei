@@ -13,14 +13,15 @@ export function tokenPool(): string[] {
 	return Array.from(tokens);
 }
 
+const alisTokens = alis
+	.split(/\s+/)
+	.map((x) => x.replaceAll(/[^ .a-zA-Z']/g, ""))
+	.filter((t) => t.length > 0);
+
 export function randomSentence(length: number) {
 	if (Math.random() < 0.5) {
-		const start = Math.floor(Math.random() * (alis.length - length));
-		return alis
-			.split(/\s+/)
-			.slice(start, start + length)
-			.join(" ")
-			.replaceAll(/[^ .a-zA-Z']/g, "");
+		const start = Math.floor(Math.random() * (alisTokens.length - length));
+		return alisTokens.slice(start, start + length).join(" ");
 	} else {
 		const tokens = tokenPool();
 		const result = [];
@@ -42,7 +43,9 @@ export class Fuzzer {
 		const sentence = randomSentence(length);
 		let ourSuccess: boolean;
 		try {
-			const tokens = new Tokenizer().tokenize(sentence);
+			const tokens = new Tokenizer({ cmevlaBrivlaMerger: false }).tokenize(
+				sentence,
+			);
 			ourSuccess = parse(tokens).success;
 		} catch (_e) {
 			ourSuccess = false;

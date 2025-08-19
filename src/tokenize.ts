@@ -41,6 +41,8 @@ export interface Token {
 	sourceText: string;
 	/** Clean form, like `a'e` or `lojbo` */
 	lexeme: string;
+	/** Indicators after this token. */
+	indicators: Token[];
 	/** Token type */
 	selmaho: Selmaho;
 }
@@ -89,6 +91,7 @@ export class Tokenizer {
 					erased: [...this.erased],
 					sourceText: this.lohuSource.join(" "),
 					lexeme: "lo'u",
+					indicators: [],
 					selmaho: "QUOTE",
 				});
 				this.lohuSource = undefined;
@@ -111,6 +114,7 @@ export class Tokenizer {
 				erased: [...this.erased],
 				sourceText: `${last.sourceText} ${sourceText}`,
 				lexeme: `${last.lexeme} ${lexeme}`,
+				indicators: [],
 				selmaho: "BY",
 			});
 		} else {
@@ -121,15 +125,31 @@ export class Tokenizer {
 				sourceText = `${last.sourceText} ${sourceText}`;
 				this.lastBahe = false;
 			}
-			this.tokens.push({
+			const newToken: Token = {
 				index: this.tokens.length,
 				line: this.lineIndex,
 				column,
 				erased: [...this.erased],
 				sourceText,
 				lexeme,
+				indicators: [],
 				selmaho,
-			});
+			};
+
+			const last = this.tokens.at(-1);
+
+			if (
+				last !== undefined &&
+				(last.selmaho === "FAhO" ||
+					(selmaho === "FUhE" && last.indicators.length === 0) ||
+					["UI", "CAI", "Y", "DAhO", "FUhO"].includes(selmaho) ||
+					(selmaho === "NAI" &&
+						["UI", "CAI"].includes(last.indicators.at(-1)?.selmaho ?? "")))
+			) {
+				last.indicators.push(newToken);
+			} else {
+				this.tokens.push(newToken);
+			}
 			this.lastZo = lexeme === "zo";
 			this.lastBahe = lexeme === "ba'e";
 			this.erased = [];
@@ -172,7 +192,10 @@ export class Tokenizer {
 }
 
 export function wordToLexeme(word: string): string {
-	return word.toLowerCase().replaceAll(/[^a-z']/g, "");
+	return word
+		.toLowerCase()
+		.replaceAll(/[^a-z']/g, "")
+		.replaceAll(/y+/g, "y");
 }
 
 export function getSelmaho(lexeme: string): Selmaho {

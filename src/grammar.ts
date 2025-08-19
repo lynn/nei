@@ -1287,7 +1287,7 @@ export interface FreeVocative extends Span {
 	type: "free-vocative";
 	vocative: Vocative;
 	relativeClauses: RelativeClauses | undefined;
-	argument: Selbri | Sumti<Floating> | Cmene;
+	argument: Selbri | Sumti<Floating> | Cmene | undefined;
 	relativeClauses2: RelativeClauses | undefined;
 	dohu: TokenIndex | undefined;
 }

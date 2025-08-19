@@ -38,6 +38,11 @@ export class BaseParser {
 		this.takeSnapshot();
 	}
 
+	protected end() {
+		this.state.pop();
+		this.takeSnapshot();
+	}
+
 	protected log(text: string, completed?: Span) {
 		if (this.state.length) this.state.pop();
 		this.state.push(text);

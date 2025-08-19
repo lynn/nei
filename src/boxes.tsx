@@ -10,6 +10,7 @@ export const TokenContext = createContext<Token[]>([]);
 
 export function ShowToken({ token }: { token: Token }) {
 	const gloss = glossWord(token.lexeme, token.selmaho);
+
 	return (
 		<div className="inline-flex flex-col hover:bg-black/10">
 			<pre
@@ -24,6 +25,11 @@ export function ShowToken({ token }: { token: Token }) {
 					</span>
 				)}
 				{token.sourceText}
+				{token.indicators.length > 0 && (
+					<span class="text-sm ml-2 text-violet-600">
+						{token.indicators.map((x) => x.sourceText).join(" ")}
+					</span>
+				)}
 			</pre>
 			<span className="text-xs italic font-light whitespace-pre-wrap">
 				{gloss?.gloss || "\u00a0"}
@@ -150,9 +156,7 @@ export function ItemBox({ item }: { item: G.Item }) {
 				item.tem?.type === "fragment" ? "hatch" : ""
 			} outline-none`}
 		>
-			{item.i && (
-				<IBox span={item.i} />
-			)}
+			{item.i && <IBox span={item.i} />}
 			{item.tem &&
 				(item.tem.type === "statement" ? (
 					<StatementBox statement={item.tem} />
