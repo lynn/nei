@@ -58,8 +58,8 @@ export const patternPaMoi = seq(patternNumberOrLerfuString, "MOI");
 export const patternPaMai = seq(patternNumberOrLerfuString, "MAI");
 
 export const patternVerb = seq(
-	many(among("NAhE", "KE")),
-	either(among("BRIVLA", "GOhA", "ME", "SE", "JAI", "NU"), patternPaMoi),
+	many(among("NAhE", "KE", "SE")),
+	either(among("BRIVLA", "GOhA", "ME", "JAI", "NU"), patternPaMoi),
 );
 
 export const patternSumti6 = either(
@@ -68,8 +68,8 @@ export const patternSumti6 = either(
 );
 
 export const patternSumti = either(
-	seq(many("PA"), patternSumti6),
-	seq(many1("PA"), patternVerb),
+	seq(opt(patternNumber), patternSumti6),
+	seq(patternNumber, patternVerb),
 );
 
 export const patternTag = seq(
@@ -77,7 +77,6 @@ export const patternTag = seq(
 	opt("SE"),
 	either(
 		among(
-			"FA", // dubious but CLL says so
 			"BAI",
 			"CAhA",
 			"KI",
@@ -98,6 +97,14 @@ export const patternTag = seq(
 		seq(patternNumber, "ROI"),
 	),
 	opt("NAI"),
+);
+
+// TODO: not quite... maybe this is just the wrong approach
+export const patternJekJoik = many1(among("NA", "SE", "JA", "JOI", "NAI"));
+
+export const patternStag = seq(
+	patternTag,
+	many(seq(patternJekJoik, patternTag)),
 );
 
 export function matchesPattern(

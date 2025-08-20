@@ -3,7 +3,9 @@ import { Tokenizer } from "./tokenize";
 
 test("tokenizer", () => {
 	expect(
-		new Tokenizer().tokenize(".i mi nelci\nlenu clire si cilre"),
+		new Tokenizer({
+			cmevlaBrivlaMerger: false,
+		}).tokenize(".i mi ti zei nelci\nlenu clire si cilre"),
 	).toMatchInlineSnapshot(`
 		[
 		  {
@@ -13,6 +15,7 @@ test("tokenizer", () => {
 		    ],
 		    "erased": [],
 		    "index": 0,
+		    "indicators": [],
 		    "lexeme": "i",
 		    "line": 1,
 		    "selmaho": "I",
@@ -25,6 +28,7 @@ test("tokenizer", () => {
 		    ],
 		    "erased": [],
 		    "index": 1,
+		    "indicators": [],
 		    "lexeme": "mi",
 		    "line": 1,
 		    "selmaho": "KOhA",
@@ -33,14 +37,15 @@ test("tokenizer", () => {
 		  {
 		    "column": [
 		      7,
-		      11,
+		      18,
 		    ],
 		    "erased": [],
 		    "index": 2,
-		    "lexeme": "nelci",
+		    "indicators": [],
+		    "lexeme": "ti zei nelci",
 		    "line": 1,
 		    "selmaho": "BRIVLA",
-		    "sourceText": "nelci",
+		    "sourceText": "ti zei nelci",
 		  },
 		  {
 		    "column": [
@@ -49,6 +54,7 @@ test("tokenizer", () => {
 		    ],
 		    "erased": [],
 		    "index": 3,
+		    "indicators": [],
 		    "lexeme": "le",
 		    "line": 2,
 		    "selmaho": "LE",
@@ -61,6 +67,7 @@ test("tokenizer", () => {
 		    ],
 		    "erased": [],
 		    "index": 4,
+		    "indicators": [],
 		    "lexeme": "nu",
 		    "line": 2,
 		    "selmaho": "NU",
@@ -76,6 +83,7 @@ test("tokenizer", () => {
 		      "si",
 		    ],
 		    "index": 5,
+		    "indicators": [],
 		    "lexeme": "cilre",
 		    "line": 2,
 		    "selmaho": "BRIVLA",

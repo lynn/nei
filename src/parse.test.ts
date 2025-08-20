@@ -10,7 +10,9 @@ test.each([
 	`.i ze'a lo slolecydo'i mi'a surla sakli`,
 	`.i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre troci lo nu gidva`,
 ])("parses %s", (text) => {
-	const tokens = new Tokenizer().tokenize(text);
+	const tokens = new Tokenizer({
+		cmevlaBrivlaMerger: false,
+	}).tokenize(text);
 	const result = parse(tokens);
 	expect(result.success).toBe(true);
 });
@@ -21,7 +23,9 @@ test.each([
 	"mi klama do klama",
 	"kei mi klama",
 ])("fails to parse %s", (text) => {
-	const tokens = new Tokenizer().tokenize(text);
+	const tokens = new Tokenizer({
+		cmevlaBrivlaMerger: false,
+	}).tokenize(text);
 	const result = parse(tokens);
 	expect(result.success).toBe(false);
 });

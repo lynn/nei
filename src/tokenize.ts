@@ -59,6 +59,7 @@ export class Tokenizer {
 	private erased: string[] = [];
 	private lastZo: boolean = false;
 	private lastBahe: boolean = false;
+	private lastZei: boolean = false;
 	private lohuSource: string[] | undefined = undefined;
 
 	private push(
@@ -78,6 +79,26 @@ export class Tokenizer {
 				selmaho: "QUOTE",
 			});
 			this.lastZo = false;
+		} else if (this.lastZei) {
+			const zei = this.tokens.pop();
+			if (!zei) throw new Error("impossible");
+			const last = this.tokens.at(-1);
+			if (!last) throw new Error("impossible");
+			const token = last.indicators.pop() ?? this.tokens.pop();
+			if (!token) throw new Error("impossible");
+			lexeme = `${token.lexeme} ${zei.lexeme} ${lexeme}`;
+			sourceText = `${token.sourceText} ${zei.sourceText} ${sourceText}`;
+			this.tokens.push({
+				index: this.tokens.length,
+				line: token.line,
+				erased: [...token.erased],
+				column: [token.column[0], column[1]],
+				sourceText,
+				lexeme,
+				indicators: [],
+				selmaho: "BRIVLA",
+			});
+			this.lastZei = false;
 		} else if (lexeme === "lo'u") {
 			this.lohuSource = [sourceText];
 		} else if (this.lohuSource) {
@@ -154,6 +175,7 @@ export class Tokenizer {
 			}
 			this.lastZo = lexeme === "zo";
 			this.lastBahe = selmaho === "BAhE";
+			this.lastZei = selmaho === "ZEI";
 			this.erased = [];
 		}
 	}
@@ -190,6 +212,9 @@ export class Tokenizer {
 			this.lineIndex++;
 		}
 		if (this.lohuSource !== undefined) throw new Error("unclosed lo'u");
+		if (this.tokens.at(-1)?.indicators?.at(-1)?.selmaho === "FUhE") {
+			throw new Error("FUhE must be followed by another indicator");
+		}
 		return this.tokens;
 	}
 }

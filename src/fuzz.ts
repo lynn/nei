@@ -7,9 +7,11 @@ import { alis } from "./alis";
 
 export function tokenPool(): string[] {
 	const tokens = new Set<string>([
-		...Object.keys(cmavo),
+		...Object.values(cmavo).map((x) => x.toLowerCase().replaceAll("h", "'")),
 		...Object.keys(shortDescriptions).filter((g) => g.startsWith("b")),
 	]);
+	tokens.delete("sa");
+	tokens.delete("su");
 	return Array.from(tokens);
 }
 

@@ -1,10 +1,10 @@
 import { useMemo, useState } from "preact/hooks";
 import "./app.css";
 import { TextBox, TokenContext } from "./boxes";
+import type { Text } from "./grammar";
 import { type ParseResult, parse, type Snapshot } from "./parse";
-import { type Text } from "./grammar";
-import { type Token, Tokenizer } from "./tokenize";
 import { Toggle } from "./Toggle";
+import { type Token, Tokenizer } from "./tokenize";
 
 interface IoProps {
 	input: string;
@@ -58,9 +58,10 @@ export function ShowSnapshots({
 					/>
 				))}
 			</div>
-			<div className="whitespace-pre text-xs my-2">
-				{snapshots[i].state.join("\n")}
+			<div className="whitespace-pre text-xs font-bold">
+				{snapshots[i].breadcrumbs.join(" > ") || " "}
 			</div>
+			<div className="whitespace-pre text-xs">{snapshots[i].state || " "}</div>
 		</div>
 	);
 }

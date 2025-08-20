@@ -14,51 +14,50 @@ import type { Selmaho, Token } from "./tokenize";
 export class BaseParser {
 	public readonly tokens: Token[];
 	public index: TokenIndex;
-	public state: string[];
+	public breadcrumbs: string[];
+	public state: string;
 	public snapshots: Snapshot[];
 	public depth = 0;
 
 	constructor(tokens: Token[]) {
 		this.tokens = tokens;
 		this.index = 0;
-		this.state = [];
+		this.breadcrumbs = [];
+		this.state = "";
 		this.snapshots = [];
 	}
 
 	protected takeSnapshot(completed?: Span) {
 		this.snapshots.push({
 			index: this.index,
-			state: [...this.state],
+			breadcrumbs: [...this.breadcrumbs],
+			state: this.state,
 			completed,
 		});
 	}
 
 	protected begin(type: string) {
-		this.state.push(`Parsing ${type}`);
+		this.breadcrumbs.push(type);
 		this.takeSnapshot();
 	}
 
 	protected end() {
-		this.state.pop();
+		this.breadcrumbs.pop();
 		this.takeSnapshot();
 	}
 
 	protected log(text: string, completed?: Span) {
-		if (this.state.length) this.state.pop();
-		this.state.push(text);
+		this.state = text;
 		this.takeSnapshot(completed);
 	}
 
 	protected parsed<T extends Span>(type: string, result: T): T {
-		this.state.pop();
-		this.state.push(
-			`Finished ${type} (${this.tokens
-				.slice(result.start, result.end + 1)
-				.map((x) => x.lexeme)
-				.join(" ")})`,
-		);
+		this.breadcrumbs.pop();
+		this.state = `Finished ${type} (${this.tokens
+			.slice(result.start, result.end + 1)
+			.map((x) => x.lexeme)
+			.join(" ")})`;
 		this.takeSnapshot(result);
-		this.state.pop();
 
 		return result;
 	}
@@ -77,8 +76,22 @@ export class BaseParser {
 		return undefined;
 	}
 
-	protected isAhead(pattern: Pattern): boolean {
-		return matchesPattern(this.tokens, this.index, pattern) !== undefined;
+	protected logScan(name: string, match: { end: number } | undefined) {
+		const msg = `Scanning for ${name}: ${match ? "found" : "not found"}`;
+		const mark = match ? { start: this.index, end: match.end - 1 } : undefined;
+		const last = this.snapshots.at(-1);
+		if (last?.state?.endsWith("not found")) {
+			last.state += `\n${msg}`;
+			last.completed = mark;
+		} else {
+			this.log(msg, mark);
+		}
+	}
+
+	protected isAhead(pattern: Pattern, name: string): boolean {
+		const match = matchesPattern(this.tokens, this.index, pattern);
+		this.logScan(name, match);
+		return match !== undefined;
 	}
 
 	protected tryParseCmavo(selmaho: Selmaho): TokenIndex | undefined {
@@ -110,9 +123,7 @@ export class BaseParser {
 		let end = first.end;
 		const rest: (Pa | LerfuWord)[] = [];
 		while (true) {
-			const peek = this.peekToken();
 			const next = this.tryParsePa() ?? this.tryParseLerfuWord();
-			console.log(this.index, peek, this.tokens, next);
 			if (!next) break;
 			end = next.end;
 			rest.push(next);

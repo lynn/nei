@@ -50,6 +50,7 @@ import type {
 	Motion,
 	Naku,
 	Nihos,
+	NoiClause,
 	Operand,
 	Operand1,
 	Operand2,
@@ -62,7 +63,6 @@ import type {
 	Positional,
 	Pretext,
 	Quantifier,
-	RelativeClause,
 	RelativeClauses,
 	RpExpression,
 	Selbri,
@@ -119,6 +119,8 @@ import type {
 import { BaseParser } from "./parse-base";
 import {
 	among,
+	either,
+	many1,
 	not,
 	opt,
 	patternPaMai,
@@ -134,7 +136,8 @@ import type { Selmaho, Token } from "./tokenize";
 
 export interface Snapshot {
 	index: TokenIndex;
-	state: string[];
+	breadcrumbs: string[];
+	state: string;
 	completed?: Span;
 }
 
@@ -196,7 +199,7 @@ export class Parser extends BaseParser {
 			this.tryParseCmavoWithFrees("I");
 
 		if (
-			this.isAhead(among("LIhU", "CU")) ||
+			this.isAhead(among("LIhU", "CU"), "LIhU or CU") ||
 			this.index === this.tokens.length
 		) {
 			return {
@@ -226,7 +229,7 @@ export class Parser extends BaseParser {
 		const i = this.tryParseCmavo("I");
 		if (i === undefined) return undefined;
 		const jk = this.tryParseJoik() ?? this.tryParseJek();
-		const stag = this.isAhead(seq(patternTag, "BO"))
+		const stag = this.isAhead(seq(many1(patternTag), "BO"), "tags BO")
 			? this.tryParseStag()
 			: undefined;
 		const bo = this.tryParseCmavoWithFrees("BO");
@@ -299,8 +302,9 @@ export class Parser extends BaseParser {
 		if (
 			this.isSumtiAhead() ||
 			this.isNaVerbAhead() ||
+			this.isAhead(seq("NA", "KU"), "naku") ||
 			this.isTaggedVerbAhead() ||
-			this.isTagAhead()
+			this.isFaOrTagAhead()
 		) {
 			return this.parseStatement(true);
 		}
@@ -350,7 +354,11 @@ export class Parser extends BaseParser {
 	}
 
 	private isTagAhead(): boolean {
-		return this.isAhead(patternTag);
+		return this.isAhead(patternTag, "tag");
+	}
+
+	private isFaOrTagAhead(): boolean {
+		return this.isAhead(either("FA", patternTag), "FA or tag");
 	}
 
 	private parseStatement(allowFragment: boolean): Statement | Fragment {
@@ -480,11 +488,11 @@ export class Parser extends BaseParser {
 	}
 
 	private isPureVerbAhead(): boolean {
-		return this.isAhead(patternVerb);
+		return this.isAhead(patternVerb, "verb");
 	}
 
 	private isNaVerbAhead(): boolean {
-		return this.isAhead(seq(opt("NA"), patternVerb));
+		return this.isAhead(seq(opt("NA"), patternVerb), "(na) verb");
 	}
 
 	private parseSelbri3(): Selbri3 {
@@ -715,11 +723,11 @@ export class Parser extends BaseParser {
 	}
 
 	private isNumberMoiAhead(): boolean {
-		return this.isAhead(patternPaMoi);
+		return this.isAhead(patternPaMoi, "PA MOI");
 	}
 
 	private isNumberMaiAhead(): boolean {
-		return this.isAhead(patternPaMai);
+		return this.isAhead(patternPaMai, "PA MAI");
 	}
 
 	private parseTanruUnit2(): TanruUnit2 {
@@ -987,13 +995,13 @@ export class Parser extends BaseParser {
 
 	private tryParseNoiClause(
 		antecedent: Span | undefined,
-	): RelativeClause | undefined {
+	): NoiClause | undefined {
 		const noi = this.tryParseCmavoWithFrees("NOI");
 		if (!noi) return undefined;
 		const subsentence = this.parseSubsentence();
 		const kuho = this.tryParseCmavoWithFrees("KUhO");
 		return {
-			type: "relative-clause",
+			type: "noi-clause",
 			...spanOf(noi, subsentence, kuho),
 			antecedent,
 			noi,
@@ -1125,7 +1133,7 @@ export class Parser extends BaseParser {
 	}
 
 	private isSumti6Ahead(): boolean {
-		return this.isAhead(patternSumti6);
+		return this.isAhead(patternSumti6, "sumti6");
 	}
 
 	private parseSumtiTail(): SumtiTail {
@@ -1158,16 +1166,17 @@ export class Parser extends BaseParser {
 	}
 
 	private isSumtiAhead(): boolean {
-		return this.isAhead(patternSumti);
+		return this.isAhead(patternSumti, "sumti");
 	}
 
 	private isTaggedSumtiAhead(): boolean {
-		return this.isAhead(seq(patternTag, patternSumti));
+		return this.isAhead(seq(patternTag, patternSumti), "tagged sumti");
 	}
 
 	private isTaggedVerbAhead(): boolean {
 		const decision = this.isAhead(
 			seq(opt("NA"), patternTag, opt("NA"), patternVerb),
+			"(na) tag (na) verb",
 		);
 		return decision;
 	}
@@ -1202,13 +1211,15 @@ export class Parser extends BaseParser {
 		if (!token) {
 			return undefined;
 		}
-		if (this.isAhead(seq("NA", "KU"))) {
+		if (this.isAhead(seq("NA", "KU"), "NA KU")) {
 			return this.parseNaku();
 		}
 		if (this.isSumtiAhead()) {
 			return this.parseSumti();
 		}
-		if (this.isAhead(seq(patternTag, not(patternVerb)))) {
+		if (
+			this.isAhead(either("FA", seq(patternTag, not(patternVerb))), "tag term")
+		) {
 			return this.parseTagged();
 		}
 
@@ -1662,6 +1673,10 @@ export class Parser extends BaseParser {
 			this.index = backtrack;
 			return undefined;
 		}
+		if ((gaho1 === undefined) !== (gaho2 === undefined)) {
+			this.index = backtrack;
+			return undefined;
+		}
 		return {
 			type: "joik",
 			gaho1,
@@ -1726,7 +1741,7 @@ export class Parser extends BaseParser {
 	}
 
 	private parseSimpleTenseModal(): SimpleTenseModal {
-		if (this.isAhead(among("KI", "CUhE"))) {
+		if (this.isAhead(among("KI", "CUhE"), "KI or CUhE")) {
 			const kiOrCuhe = this.nextToken()!;
 			return {
 				type: "stm-cmavo",
@@ -1734,7 +1749,7 @@ export class Parser extends BaseParser {
 				kiOrCuhe: kiOrCuhe.index,
 			};
 		}
-		if (this.isAhead(seq(opt("NAhE"), opt("SE"), "BAI"))) {
+		if (this.isAhead(seq(opt("NAhE"), opt("SE"), "BAI"), "BAI")) {
 			return this.parseStmBai();
 		}
 		return this.parseStmTense();
@@ -2165,7 +2180,7 @@ export class Parser extends BaseParser {
 			throw new Error("TODO gek");
 		} else if (token?.selmaho === "LAhE") {
 			throw new Error("TODO la'e");
-		} else if (this.isAhead(seq("NAhE", "BO"))) {
+		} else if (this.isAhead(seq("NAhE", "BO"), "NAhE BO")) {
 			throw new Error("TODO na'ebo");
 		} else {
 			const quantifier = this.tryParseQuantifier();
