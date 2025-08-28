@@ -130,10 +130,19 @@ export interface IboStatement2 extends Span {
 
 /// statement-3 = sentence | [tag] TUhE # text-1 /TUhU#/
 
-export interface Statement3 extends Span {
-	type: "statement-3";
+export type Statement3 = Statement3Sentence | Statement3Tuhe;
+
+export interface Statement3Sentence extends Span {
+	type: "statement-3-sentence";
 	sentence: Sentence;
-	// TODO: [tag] TUhE # text-1 /TUhU#/
+}
+
+export interface Statement3Tuhe extends Span {
+	type: "statement-3-tuhe";
+	tag: Tag | undefined;
+	tuhe: CmavoWithFrees;
+	text1: Text1;
+	tuhu: CmavoWithFrees | undefined;
 }
 
 /// fragment =
@@ -1096,17 +1105,26 @@ export interface Tag extends Span {
 
 export interface Stag extends Span {
 	type: "stag";
-	first: SimpleTenseModal;
+	first: Stm;
 	// TODO: joik/jek
 }
 
 /// tense-modal = simple-tense-modal # | FIhO # selbri /FEhU#/
 
-export interface TenseModal extends Span {
-	type: "tense-modal";
-	first: SimpleTenseModal;
+export type TenseModal = TenseModalStm | TenseModalFiho;
+
+export interface TenseModalStm extends Span {
+	type: "tense-modal-stm";
+	first: Stm;
 	frees: Free[];
 	// TODO: | FIhO # selbri /FEhU#/
+}
+
+export interface TenseModalFiho extends Span {
+	type: "tense-modal-fiho";
+	fiho: CmavoWithFrees;
+	selbri: Selbri;
+	fehu: CmavoWithFrees | undefined;
 }
 
 /// simple-tense-modal =
@@ -1115,7 +1133,10 @@ export interface TenseModal extends Span {
 ///     | KI
 ///     | CUhE
 
-export type SimpleTenseModal = StmBai | StmTense | StmCmavo;
+export interface Stm extends Span {
+	type: "stm";
+	value: StmBai | StmTense | StmCmavo;
+}
 
 export interface StmBai extends Span {
 	type: "stm-bai";
@@ -1155,7 +1176,7 @@ export interface Spacetime extends Span {
 
 export interface Time extends Span {
 	type: "time";
-	zi: CmavoWithFrees | undefined;
+	zi: TokenIndex | undefined;
 	timeOffsets: TimeOffset[];
 	zehapu: Zehapu | undefined;
 	intervalProperties: IntervalProperty[];
@@ -1181,7 +1202,7 @@ export interface TimeOffset extends Span {
 
 export interface Space extends Span {
 	type: "space";
-	va: CmavoWithFrees | undefined;
+	va: TokenIndex | undefined;
 	spaceOffsets: SpaceOffset[];
 	spaceIntervals: SpaceInterval[];
 	motion: Motion | undefined;

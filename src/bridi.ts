@@ -12,7 +12,10 @@ import type {
 import { spanOf } from "./span";
 import type { Token } from "./tokenize";
 
-function faToXIndex(fa: CmavoWithFrees, tokens: Token[]): number | "fai" | "?" {
+function faToXIndex(
+	fa: CmavoWithFrees,
+	tokens: Token<string>[],
+): number | "fai" | "?" {
 	const lexeme = tokens[fa.cmavo].lexeme;
 	if (lexeme === "fa") return 1;
 	if (lexeme === "fe") return 2;
@@ -44,7 +47,7 @@ class TerbriState {
 
 	public addTerm(
 		term: Term<Floating> & { type: "sumti" | "tagged" },
-		tokens: Token[],
+		tokens: Token<string>[],
 	): number | "fai" | "?" | "modal" {
 		if (term.type === "sumti") {
 			const xIndex = this.x;
@@ -78,7 +81,7 @@ export class TailState {
 		this.state = state;
 	}
 
-	public placeTerm(term: Term<Floating>, tokens: Token[]): Role {
+	public placeTerm(term: Term<Floating>, tokens: Token<string>[]): Role {
 		if (term.type === "naku") {
 			throw new Error("naku should not be placed in a positional role");
 		} else {
@@ -129,7 +132,7 @@ export class HeadBridi {
 		};
 	}
 
-	public place(term: Term<Floating>, tokens: Token[]) {
+	public place(term: Term<Floating>, tokens: Token<string>[]) {
 		if (term.type === "naku") {
 			this.head.push(term);
 		} else {
@@ -192,7 +195,10 @@ export class TailBridi {
 		top.push(...group);
 	}
 
-	public place(term: Term<Floating>, tokens: Token[]): Term<Positional> {
+	public place(
+		term: Term<Floating>,
+		tokens: Token<string>[],
+	): Term<Positional> {
 		const top = this.groups.at(-1);
 		if (!top) throw new Error("No group to place in");
 
@@ -210,7 +216,7 @@ export class TailBridi {
 
 	public placeTailTerms(
 		tailTerms: TailTerms<Floating>,
-		tokens: Token[],
+		tokens: Token<string>[],
 	): TailTerms<Positional> {
 		return {
 			...tailTerms,
@@ -222,7 +228,7 @@ export class TailBridi {
 
 	public placeTerms(
 		terms: Terms<"floating">,
-		tokens: Token[],
+		tokens: Token<string>[],
 	): Terms<Positional> | undefined {
 		return {
 			...terms,

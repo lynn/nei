@@ -31,13 +31,14 @@ import type {
 	Ijek,
 	IjekStatement2,
 	Indicator,
-	IntervalProperty,
 	Item,
 	Jek,
 	JkBoSelbri5,
 	JkSelbri5,
 	Joik,
 	JoikJek,
+	LerfuString,
+	LerfuWord,
 	Linkargs,
 	Links,
 	Many,
@@ -47,8 +48,8 @@ import type {
 	MexFuha,
 	MexOperator,
 	MexSimple,
-	Motion,
 	Naku,
+	Namcu,
 	Nihos,
 	NoiClause,
 	Operand,
@@ -73,20 +74,13 @@ import type {
 	Selbri5,
 	Selbri6,
 	Sentence,
-	SimpleTenseModal,
-	Space,
-	SpaceInterval,
-	SpaceIntProp,
-	SpaceOffset,
-	Spacetime,
 	Span,
 	Stag,
 	Statement,
 	Statement1,
 	Statement2,
 	Statement3,
-	StmBai,
-	StmTense,
+	Stm,
 	Subsentence,
 	Sumti,
 	Sumti1,
@@ -108,13 +102,8 @@ import type {
 	Terms,
 	Text,
 	Text1,
-	Time,
-	TimeOffset,
-	Timespace,
 	TokenIndex,
 	Vocative,
-	Vxha,
-	Zehapu,
 } from "./grammar";
 import { BaseParser } from "./parse-base";
 import {
@@ -127,10 +116,10 @@ import {
 	patternPaMoi,
 	patternSumti,
 	patternSumti6,
-	patternTag,
 	patternVerb,
 	seq,
 } from "./pattern";
+import { Preparser, type BigSelmaho } from "./preparse";
 import { spanOf } from "./span";
 import type { Selmaho, Token } from "./tokenize";
 
@@ -141,7 +130,7 @@ export interface Snapshot {
 	completed?: Span;
 }
 
-export class Parser extends BaseParser {
+export class Parser extends BaseParser<BigSelmaho> {
 	public parseText(topLevel: boolean = true): Text {
 		this.begin("text");
 		const pretext = this.tryParsePretext();
@@ -199,7 +188,7 @@ export class Parser extends BaseParser {
 			this.tryParseCmavoWithFrees("I");
 
 		if (
-			this.isAhead(among("LIhU", "CU"), "LIhU or CU") ||
+			this.isAhead(among("LIhU", "TUhU", "CU"), "LIhU/TUhU/CU") ||
 			this.index === this.tokens.length
 		) {
 			return {
@@ -229,7 +218,7 @@ export class Parser extends BaseParser {
 		const i = this.tryParseCmavo("I");
 		if (i === undefined) return undefined;
 		const jk = this.tryParseJoik() ?? this.tryParseJek();
-		const stag = this.isAhead(seq(many1(patternTag), "BO"), "tags BO")
+		const stag = this.isAhead(patternTagBo, "tags BO")
 			? this.tryParseStag()
 			: undefined;
 		const bo = this.tryParseCmavoWithFrees("BO");
@@ -247,9 +236,49 @@ export class Parser extends BaseParser {
 		};
 	}
 
+	private tryParsePreparsed(type: string): Span | undefined {
+		const token = this.peekToken();
+		if (
+			token?.preparsed !== undefined &&
+			"type" in token.preparsed &&
+			token.preparsed.type === type
+		) {
+			return token.preparsed;
+		}
+		return undefined;
+	}
+
+	private tryParseJoik(): Joik | undefined {
+		return this.tryParsePreparsed("joik") as Joik | undefined;
+	}
+
+	private tryParseJek(): Jek | undefined {
+		return this.tryParsePreparsed("jek") as Jek | undefined;
+	}
+
+	private tryParseEk(): Ek | undefined {
+		return this.tryParsePreparsed("ek") as Ek | undefined;
+	}
+
+	private tryParseGihek(): Gihek | undefined {
+		return this.tryParsePreparsed("gihek") as Gihek | undefined;
+	}
+
+	private tryParseStm(): Stm | undefined {
+		return this.tryParsePreparsed("stm") as Stm | undefined;
+	}
+
+	private tryParseNamcu(): Namcu | undefined {
+		return this.tryParsePreparsed("number") as Namcu | undefined;
+	}
+
+	private tryParseLerfuString(): LerfuString | undefined {
+		return this.tryParsePreparsed("lerfu-string") as LerfuString | undefined;
+	}
+
 	private tryParseStag(): Stag | undefined {
-		if (this.isTagAhead()) {
-			const first = this.parseSimpleTenseModal();
+		const first = this.tryParseStm();
+		if (first !== undefined) {
 			return { type: "stag", ...spanOf(first), first };
 		}
 		return undefined;
@@ -302,6 +331,7 @@ export class Parser extends BaseParser {
 		if (
 			this.isSumtiAhead() ||
 			this.isNaVerbAhead() ||
+			this.isAhead(among("TUhE"), "tu'e") ||
 			this.isAhead(seq("NA", "KU"), "naku") ||
 			this.isTaggedVerbAhead() ||
 			this.isFaOrTagAhead()
@@ -353,12 +383,18 @@ export class Parser extends BaseParser {
 		return undefined;
 	}
 
-	private isTagAhead(): boolean {
-		return this.isAhead(patternTag, "tag");
+	private isStmAhead(): boolean {
+		const token = this.peekToken();
+		return token?.preparsed?.type === "stm";
 	}
 
 	private isFaOrTagAhead(): boolean {
-		return this.isAhead(either("FA", patternTag), "FA or tag");
+		const token = this.peekToken();
+		return (
+			token?.preparsed?.type === "stm" ||
+			token?.selmaho === "FA" ||
+			token?.selmaho === "FIhO"
+		);
 	}
 
 	private parseStatement(allowFragment: boolean): Statement | Fragment {
@@ -400,12 +436,7 @@ export class Parser extends BaseParser {
 	}
 
 	private isStatementAhead(): boolean {
-		return (
-			this.isNaVerbAhead() ||
-			this.isTaggedVerbAhead() ||
-			this.isSumtiAhead() ||
-			this.isTaggedSumtiAhead()
-		);
+		return this.isNaVerbAhead() || this.isFaOrTagAhead() || this.isSumtiAhead();
 	}
 
 	private parseStatement2(allowFragment: false): Statement2;
@@ -436,11 +467,30 @@ export class Parser extends BaseParser {
 		};
 	}
 
+	private tryParseTag(): Tag | undefined {
+		return this.isStmAhead() ? this.parseTag() : undefined;
+	}
+
 	private parseStatement3(allowFragment: boolean): Statement3 | Fragment {
+		const tag = this.tryParseTag();
+		if (tag !== undefined) {
+			const tuhe = this.tryParseCmavoWithFrees("TUhE");
+			if (tuhe === undefined) throw new ParseError("expected TUhE");
+			const text1 = this.parseText1();
+			const tuhu = this.tryParseCmavoWithFrees("TUhU");
+			return {
+				type: "statement-3-tuhe",
+				...spanOf(tag, tuhe, text1, tuhu),
+				tag,
+				tuhe,
+				text1,
+				tuhu,
+			};
+		}
 		const sentence = this.parseSentence(allowFragment);
 		if (sentence.type === "fragment") return sentence;
 		return {
-			type: "statement-3",
+			type: "statement-3-sentence",
 			...spanOf(sentence),
 			sentence,
 		};
@@ -448,7 +498,7 @@ export class Parser extends BaseParser {
 
 	private parseSelbri(): Selbri {
 		this.begin("selbri");
-		const tag = this.isTagAhead() ? this.parseTag() : undefined;
+		const tag = this.isStmAhead() ? this.parseTag() : undefined;
 		const selbri1 = this.parseSelbri1();
 		return this.parsed("selbri", {
 			type: "selbri",
@@ -940,7 +990,7 @@ export class Parser extends BaseParser {
 
 		if (
 			token &&
-			token.selmaho === "PA" &&
+			token.selmaho === "number" &&
 			!this.isNumberMaiAhead() &&
 			!this.isNumberMoiAhead()
 		) {
@@ -951,7 +1001,7 @@ export class Parser extends BaseParser {
 	}
 
 	private parseQuantifier(): Quantifier {
-		const number = this.parseNamcu();
+		const number = this.tryParseNamcu()!;
 		const boi = this.tryParseCmavoWithFrees("BOI");
 		return {
 			type: "quantifier",
@@ -1020,7 +1070,7 @@ export class Parser extends BaseParser {
 			return { type: "sumti-6-koha", ...spanOf(koha), koha };
 		}
 
-		if (token.selmaho === "BY") {
+		if (token.selmaho === "lerfu-string") {
 			const lerfuString = this.tryParseLerfuString()!;
 			const boi = this.tryParseCmavoWithFrees("BOI");
 			return {
@@ -1169,10 +1219,6 @@ export class Parser extends BaseParser {
 		return this.isAhead(patternSumti, "sumti");
 	}
 
-	private isTaggedSumtiAhead(): boolean {
-		return this.isAhead(seq(patternTag, patternSumti), "tagged sumti");
-	}
-
 	private isTaggedVerbAhead(): boolean {
 		const decision = this.isAhead(
 			seq(opt("NA"), patternTag, opt("NA"), patternVerb),
@@ -1184,6 +1230,7 @@ export class Parser extends BaseParser {
 	private parseTag(): Tag {
 		this.begin("tag");
 		const tenseModal = this.parseTenseModal();
+		// TODO: jek joik
 		return this.parsed("tag", {
 			type: "tag",
 			...spanOf(tenseModal),
@@ -1218,7 +1265,10 @@ export class Parser extends BaseParser {
 			return this.parseSumti();
 		}
 		if (
-			this.isAhead(either("FA", seq(patternTag, not(patternVerb))), "tag term")
+			this.isAhead(
+				either("FA", "FIhO", seq(patternTag, not(patternVerb))),
+				"tag term",
+			)
 		) {
 			return this.parseTagged();
 		}
@@ -1385,44 +1435,11 @@ export class Parser extends BaseParser {
 		return spanOf(tertau);
 	}
 
-	private tryParseGihek(): Gihek | undefined {
-		const backtrack = this.index;
-		const na = this.tryParseCmavo("NA");
-		const se = this.tryParseCmavo("SE");
-		const giha = this.tryParseCmavo("GIhA");
-		const nai = this.tryParseCmavo("NAI");
-		if (giha === undefined) {
-			this.index = backtrack;
-			return undefined;
-		}
-		return {
-			type: "gihek",
-			...spanOf(na, se, giha, nai),
-			na,
-			se,
-			giha,
-			nai,
-		};
-	}
-
 	private tryParseGihekWithFrees(): GihekWithFrees | undefined {
 		const gihek = this.tryParseGihek();
 		if (gihek === undefined) return undefined;
 		const frees = this.parseFrees();
 		return { type: "gihek-with-frees", ...spanOf(gihek, frees), gihek, frees };
-	}
-
-	private tryParseEk(): Ek | undefined {
-		const backtrack = this.index;
-		const na = this.tryParseCmavo("NA");
-		const se = this.tryParseCmavo("SE");
-		const a = this.tryParseCmavo("A")!;
-		const nai = this.tryParseCmavo("NAI");
-		if (a === undefined) {
-			this.index = backtrack;
-			return undefined;
-		}
-		return { type: "ek", ...spanOf(na, se, a, nai), na, se, a, nai };
 	}
 
 	private tryParseEkWithFrees(): EkWithFrees | undefined {
@@ -1620,7 +1637,7 @@ export class Parser extends BaseParser {
 
 		if (token?.selmaho === "XI") {
 			const xi = this.tryParseCmavoWithFrees("XI")!;
-			const ordinal = this.tryParseLerfuString() ?? this.parseNamcu();
+			const ordinal = this.tryParseLerfuString() ?? this.tryParseNamcu()!;
 			const boi = this.tryParseCmavo("BOI");
 			return {
 				type: "free-xi",
@@ -1655,60 +1672,6 @@ export class Parser extends BaseParser {
 		};
 	}
 
-	protected tryParseJoik(): Joik | undefined {
-		const backtrack = this.index;
-		const gaho1 = this.tryParseCmavo("GAhO");
-		const se = this.tryParseCmavo("SE");
-		const token = this.nextToken();
-		if (!token || (token.selmaho !== "JOI" && token.selmaho !== "BIhI")) {
-			this.index = backtrack;
-			return undefined;
-		}
-		const nai = this.tryParseCmavo("NAI");
-		const gaho2 = this.tryParseCmavo("GAhO");
-		if (
-			token.selmaho === "JOI" &&
-			(gaho1 !== undefined || gaho2 !== undefined)
-		) {
-			this.index = backtrack;
-			return undefined;
-		}
-		if ((gaho1 === undefined) !== (gaho2 === undefined)) {
-			this.index = backtrack;
-			return undefined;
-		}
-		return {
-			type: "joik",
-			gaho1,
-			se,
-			joi: token.index,
-			nai,
-			gaho2,
-			...spanOf(gaho1, se, token, nai, gaho2),
-		};
-	}
-
-	protected tryParseJek(): Jek | undefined {
-		const backtrack = this.index;
-		const na = this.tryParseCmavo("NA");
-		const se = this.tryParseCmavo("SE");
-		const ja = this.tryParseCmavo("JA");
-		if (ja === undefined) {
-			this.index = backtrack;
-			return undefined;
-		}
-		const nai = this.tryParseCmavo("NAI");
-
-		return {
-			type: "jek",
-			na,
-			se,
-			ja,
-			nai,
-			...spanOf(na, se, ja, nai),
-		};
-	}
-
 	protected tryParseIjek(): Ijek | undefined {
 		const backtrack = this.index;
 		const i = this.tryParseCmavo("I");
@@ -1729,334 +1692,26 @@ export class Parser extends BaseParser {
 	// #region tense
 
 	public parseTenseModal(): TenseModal {
-		const simpleTenseModal = this.parseSimpleTenseModal();
+		const simpleTenseModal = this.tryParseStm()!;
+		const fiho = this.tryParseCmavoWithFrees("FIhO");
+		if (fiho) {
+			const selbri = this.parseSelbri();
+			const fehu = this.tryParseCmavoWithFrees("FEhU");
+			return {
+				type: "tense-modal-fiho",
+				...spanOf(fiho, selbri, fehu),
+				fiho,
+				selbri,
+				fehu,
+			};
+		}
 
 		const frees = this.parseFrees();
 		return {
-			type: "tense-modal",
+			type: "tense-modal-stm",
 			...spanOf(simpleTenseModal),
 			first: simpleTenseModal,
 			frees,
-		};
-	}
-
-	private parseSimpleTenseModal(): SimpleTenseModal {
-		if (this.isAhead(among("KI", "CUhE"), "KI or CUhE")) {
-			const kiOrCuhe = this.nextToken()!;
-			return {
-				type: "stm-cmavo",
-				...spanOf(kiOrCuhe),
-				kiOrCuhe: kiOrCuhe.index,
-			};
-		}
-		if (this.isAhead(seq(opt("NAhE"), opt("SE"), "BAI"), "BAI")) {
-			return this.parseStmBai();
-		}
-		return this.parseStmTense();
-	}
-
-	private parseStmBai(): StmBai {
-		const nahe = this.tryParseCmavo("NAhE");
-		const se = this.tryParseCmavo("SE");
-		const bai = this.tryParseCmavo("BAI")!;
-		const nai = this.tryParseCmavo("NAI");
-		const ki = this.tryParseCmavo("KI");
-		return {
-			type: "stm-bai",
-			...spanOf(nahe, se, bai, nai, ki),
-			nahe,
-			se,
-			bai,
-			nai,
-			ki,
-		};
-	}
-
-	private parseStmTense(): StmTense {
-		const nahe = this.tryParseCmavo("NAhE");
-		const tense = this.tryParseTimespace() ?? this.tryParseSpacetime();
-		const caha = this.tryParseCmavo("CAhA");
-		const ki = this.tryParseCmavo("KI");
-
-		if (tense === undefined && caha === undefined) {
-			// We should never hit this because we predict it
-			throw new ParseError("Bad stm-tense", this.index);
-		}
-
-		return {
-			type: "stm-tense",
-			...spanOf(nahe, tense, caha, ki),
-			nahe,
-			tense,
-			caha,
-			ki,
-		};
-	}
-
-	private tryParseTimespace(): Timespace | undefined {
-		const time = this.tryParseTime();
-		if (!time) return undefined;
-		const space = this.tryParseSpace();
-		return {
-			type: "timespace",
-			...spanOf(time, space),
-			time,
-			space,
-		};
-	}
-
-	private tryParseSpacetime(): Spacetime | undefined {
-		const space = this.tryParseSpace();
-		if (space === undefined) return undefined;
-		const time = this.tryParseTime();
-		return {
-			type: "spacetime",
-			...spanOf(space, time),
-			space,
-			time,
-		};
-	}
-
-	private tryParseTime(): Time | undefined {
-		const backtrack = this.index;
-		this.begin("time");
-		let start: number | undefined;
-		let end: number | undefined;
-
-		const zi = this.tryParseCmavoWithFrees("ZI");
-		if (zi) {
-			start ??= zi.start;
-			end = zi.end;
-		}
-
-		const timeOffsets: TimeOffset[] = [];
-		while (true) {
-			const offset = this.tryParseTimeOffset();
-			if (!offset) break;
-			timeOffsets.push(offset);
-			start ??= offset.start;
-			end = offset.end;
-		}
-
-		const zehapu = this.tryParseZehapu();
-		if (zehapu) {
-			start ??= zehapu.start;
-			end = zehapu.end;
-		}
-
-		const intervalProperties: IntervalProperty[] = [];
-		while (true) {
-			const property = this.tryParseIntervalProperty();
-			if (!property) break;
-			intervalProperties.push(property);
-			start ??= property.start;
-			end = property.end;
-		}
-
-		if (start !== undefined && end !== undefined) {
-			return this.parsed("time", {
-				type: "time" as const,
-				start,
-				end,
-				zi,
-				timeOffsets,
-				zehapu,
-				intervalProperties,
-			});
-		} else {
-			this.index = backtrack;
-			this.end();
-			return undefined;
-		}
-	}
-
-	private tryParseTimeOffset(): TimeOffset | undefined {
-		const pu = this.tryParseCmavo("PU");
-		if (pu === undefined) return undefined;
-		const nai = this.tryParseCmavo("NAI");
-		const zi = this.tryParseCmavo("ZI");
-		return {
-			type: "time-offset",
-			...spanOf(pu, nai, zi),
-			pu,
-			nai,
-			zi,
-		};
-	}
-
-	private tryParseIntervalProperty(): IntervalProperty | undefined {
-		const taheOrZaho = this.tryParseCmavo("TAhE") ?? this.tryParseCmavo("ZAhO");
-		if (taheOrZaho !== undefined) {
-			const nai = this.tryParseCmavo("NAI");
-			return {
-				type: "interval-property-cmavo",
-				...spanOf(taheOrZaho, nai),
-				taheOrZaho,
-				nai,
-			};
-		}
-
-		const backtrack = this.index;
-		const number = this.tryParseNamcu();
-		if (number === undefined) return undefined;
-		const roi = this.tryParseCmavo("ROI");
-		if (roi === undefined) {
-			this.index = backtrack;
-			return undefined;
-		}
-		const nai = this.tryParseCmavo("NAI");
-		return {
-			type: "interval-property-roi",
-			...spanOf(number, roi, nai),
-			number,
-			roi,
-			nai,
-		};
-	}
-
-	private tryParseZehapu(): Zehapu | undefined {
-		const zeha = this.tryParseCmavo("ZEhA");
-		if (zeha === undefined) return undefined;
-		const pu = this.tryParseCmavo("PU");
-		const nai = pu ? this.tryParseCmavo("NAI") : undefined;
-		return {
-			type: "zehapu",
-			...spanOf(zeha, pu, nai),
-			zeha,
-			pu,
-			nai,
-		};
-	}
-
-	private tryParseSpace(): Space | undefined {
-		this.begin("space");
-		const backtrack = this.index;
-		let start: number | undefined;
-		let end: number | undefined;
-
-		const va = this.tryParseCmavoWithFrees("VA");
-		if (va !== undefined) {
-			start ??= va.start;
-			end = va.end;
-		}
-
-		const spaceOffsets: SpaceOffset[] = [];
-		while (true) {
-			const offset = this.tryParseSpaceOffset();
-			if (!offset) break;
-			spaceOffsets.push(offset);
-			start ??= offset.start;
-			end = offset.end;
-		}
-		const spaceIntervals: SpaceInterval[] = [];
-		while (true) {
-			const interval = this.tryParseSpaceInterval();
-			if (!interval) break;
-			spaceIntervals.push(interval);
-			start ??= interval.start;
-			end = interval.end;
-		}
-
-		const motion = this.tryParseMotion();
-		if (motion !== undefined) {
-			start ??= motion.start;
-			end = motion.end;
-		}
-
-		if (start !== undefined && end !== undefined) {
-			return this.parsed("space", {
-				type: "space" as const,
-				start,
-				end,
-				va,
-				spaceOffsets,
-				spaceIntervals,
-				motion,
-			});
-		} else {
-			this.index = backtrack;
-			this.end();
-			return undefined;
-		}
-	}
-
-	private tryParseMotion(): Motion | undefined {
-		const mohi = this.tryParseCmavo("MOhI");
-		if (mohi === undefined) return undefined;
-		const spaceOffset = this.tryParseSpaceOffset();
-		if (spaceOffset === undefined) {
-			throw new ParseError("bad motion");
-		}
-		return {
-			type: "motion",
-			...spanOf(mohi, spaceOffset),
-			mohi,
-			spaceOffset,
-		};
-	}
-
-	private tryParseSpaceOffset(): SpaceOffset | undefined {
-		const faha = this.tryParseCmavo("FAhA");
-		if (faha === undefined) return undefined;
-		const nai = this.tryParseCmavo("NAI");
-		const va = this.tryParseCmavo("VA");
-		return {
-			type: "space-offset",
-			...spanOf(faha, nai, va),
-			faha,
-			nai,
-			va,
-		};
-	}
-
-	private tryParseSpaceInterval(): SpaceInterval | undefined {
-		const vxha = this.tryParseVxha();
-		const spaceIntProps: SpaceIntProp[] = [];
-		while (true) {
-			const next = this.tryParseSpaceIntProp();
-			if (!next) break;
-
-			spaceIntProps.push(next);
-		}
-		if (vxha !== undefined || spaceIntProps.length) {
-			return {
-				type: "space-interval",
-				...spanOf(vxha, spaceIntProps),
-				vxha,
-				spaceIntProps,
-			};
-		}
-	}
-
-	private tryParseVxha(): Vxha | undefined {
-		const veha = this.tryParseCmavo("VEhA");
-		const viha = this.tryParseCmavo("VIhA");
-		if ((veha ?? viha) === undefined) return undefined;
-		const faha = this.tryParseCmavo("FAhA");
-		const nai = faha ? this.tryParseCmavo("NAI") : undefined;
-		return {
-			type: "vxha",
-			...spanOf(veha, viha, faha, nai),
-			veha,
-			viha,
-			faha,
-			nai,
-		};
-	}
-
-	private tryParseSpaceIntProp(): SpaceIntProp | undefined {
-		const fehe = this.tryParseCmavo("FEhE");
-		if (fehe === undefined) return undefined;
-		const intervalProperty = this.tryParseIntervalProperty();
-		if (intervalProperty === undefined) {
-			throw new ParseError("bad space-int-prop");
-		}
-		return {
-			type: "space-int-prop",
-			start: fehe,
-			end: intervalProperty.end,
-			fehe,
-			intervalProperty,
 		};
 	}
 
@@ -2211,7 +1866,8 @@ export type ParseResult = (
 ) & { snapshots: Snapshot[] };
 
 export function parse(tokens: Token[]): ParseResult {
-	const parser = new Parser(tokens);
+	const preparsed = new Preparser(tokens).preparse();
+	const parser = new Parser(preparsed);
 	const start = performance.now();
 	try {
 		const text = parser.parseText();
@@ -2242,7 +1898,8 @@ export function parse(tokens: Token[]): ParseResult {
 				for (let i = 0; i < 8; i++) {
 					try {
 						const partialTokens = tokens.slice(0, error.site - i);
-						const partialText = new Parser(partialTokens).parseText();
+						const preparsed = new Preparser(partialTokens).preparse();
+						const partialText = new Parser(preparsed).parseText();
 						return {
 							success: false,
 							error,

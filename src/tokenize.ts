@@ -1,4 +1,6 @@
 import { cmavo } from "./cmavo";
+import type { Span } from "./grammar";
+import type { PreparsedType } from "./preparse";
 
 export type Selmaho =
 	| "BRIVLA"
@@ -29,7 +31,8 @@ export function isTenseSelmaho(selmaho: Selmaho): boolean {
 	].includes(selmaho);
 }
 
-export interface Token {
+
+export interface Token<S extends string = Selmaho> {
 	index: number;
 	/** 1-indexed: line the token was on in the source text. */
 	line: number;
@@ -44,7 +47,9 @@ export interface Token {
 	/** Indicators after this token. */
 	indicators: Token[];
 	/** Token type */
-	selmaho: Selmaho;
+	selmaho: S;
+	/** Is this token a flattened preparsed constituent? */
+	preparsed?: Span & { type: PreparsedType };
 }
 
 export class Tokenizer {

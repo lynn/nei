@@ -15,7 +15,6 @@ import {
 	patternVerb,
 	patternSumti6,
 	patternSumti,
-	patternTag,
 	matchesPattern,
 } from "./pattern";
 import type { Token, Selmaho } from "./tokenize";
@@ -30,6 +29,7 @@ function createToken(selmaho: Selmaho, index: number = 0): Token {
 		sourceText: selmaho.toLowerCase(),
 		lexeme: selmaho.toLowerCase(),
 		selmaho,
+		indicators: [],
 	};
 }
 
@@ -325,19 +325,6 @@ describe("Predefined patterns", () => {
 		const tokens = [createToken("PA"), createToken("BRIVLA")];
 		const result = matchesPattern(tokens, 0, patternSumti);
 		expect(result).toEqual({ end: 2 });
-	});
-
-	it("should match patternTag", () => {
-		for (const tokens of [
-			[createToken("NAhE"), createToken("SE"), createToken("BAI")],
-			[createToken("SE"), createToken("BAI")],
-			[createToken("NAhE"), createToken("BAI")],
-			[createToken("BAI")],
-			[createToken("BAI"), createToken("NAI")],
-		]) {
-			const result = matchesPattern(tokens, 0, patternTag);
-			expect(result).toEqual({ end: tokens.length });
-		}
 	});
 });
 

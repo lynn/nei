@@ -3701,7 +3701,7 @@ fa'o
    lo xajmi je cmatce nazbi .i la .totos. cu kelci ze'a lo mulno djedi .i
    je la .dorotis. cu kelkansa gi'e mutce lo ka se dirba ty
 
-                                                            [oz01-01b.jpg]
+                                                            
 
    ni'o ku'i ca lo cabdei cu na kelci .i la nakfamti .xenris. cu zutse lo
    vorme serti gi'e xanka catlu lo tsani noi grusi ba'e zmadu lo fadni .i
@@ -3756,7 +3756,7 @@ fa'o
    ka mlapau carna cu cinmo lo ka toljursa se sligau tai tu'a lo cifnu pe
    bu'u lo slicka
 
-   [oz01-02.jpg]
+   
 
    ni'o la .totos. na nelci .i bajra ru'u bu'u lo kumfa fau lo nu zvati
    nu'i ge ca pa da ti nu'u gi ca pa de ta nu'u fau lo nu cladu cmoni .i
@@ -3783,7 +3783,7 @@ fa'o
 
    ni'o to'e ki'u nai lo nu lo zdani cu slilu .e lo nu savru se sance fa
    lo brife kei la .dorotis. cu ba zi ga'orgau lo kanla gi'e sipybi'o
-                                [oz01-03.jpg]
+                                
      __________________________________________________________________
 
    ni'o ni'o re mo'o
@@ -3799,7 +3799,7 @@ fa'o
    fi lo ri ckana gi'e bajra fau lo nu la .totos. cu jibni jersi kei gi'e
    kargau lo vorme
 
-                                [oz02-01.jpg]
+                                
 
    ni'o lo cmalu nixli cu manci krixa gi'e ru'u catlu fau lo nu lo kanla
    cu banro je banro se ja'e lo nu viska lo tai se manci
@@ -3821,7 +3821,7 @@ fa'o
    la .dorotis. ku noi banro sutra ma'i lo na'asmi verba kei gi'e ku'i
    jvinu simlu lo ka na'azma dy li so'i
 
-   [oz02-02.jpg]
+   
 
    ni'o gunma lo ci nanmu .e lo pa ninmu .i je ro se go'i cu dasni lo
    cizra .i dasni lo cukla mapku poi konju fi lo cmalu poi gutci li pa lo
@@ -3865,7 +3865,7 @@ fa'o
    be lo kojna be lo barda kamju poi lo zdani cu se sarji ke'a cu krasi lo
    re jamfu poi dasni lo rijno cutci pe lo kinli crapau
 
-                                [oz02-03.jpg]
+                                
 
    ni'o «lu ii ii —sei la .dorotis. cu terpa krixa be fau lo nu xance
    jalsimgau— .i ju'o lo zdani pu farlu ta .i .ei mi'o mo li'u»
@@ -3948,7 +3948,7 @@ fa'o
    co'a cmila .i lo jamfu be lo morsi termafyfe'i cu ba'o mo'u canci .i je
    no da po'u na'e bo lo rijyska cutci cu ve vimcu
 
-   [oz02-04.jpg]
+   
 
    ni'o «lu ty pu tai tolci'o —sei la termafyfe'i pe la berti cu ciksi—
    ja'e lo nu sutra lo ka sudbi'o bu'u lo solgu'i .i lo cabna cu fanmo ty
@@ -4057,7 +4057,7 @@ fa'o
    ni'o ni'o ci mo'o
    lo nu la .dorotis. cu nurgau la cpitepygau
 
-   [oz03-01.jpg]
+   
 
    ni'o la .dorotis. ca lo nu no drata cu zvati cu co'a xagji .i ja'e bo
    dy cu klama lo kajnyta'e gi'e se va'u katna lo nanba noi dy punji lo
@@ -4129,7 +4129,7 @@ fa'o
    zdani pe la maxpre cu cizyselji'u dinju .i ni'i bo zy cu slanu .i je
    drudi fa lo bolxadba .i ro boi zy cu zilcintypu'i fa lo blanu .i ki'u
    bo bu'u lo vi gugde pe la stuna lo blanu cu selneirai skari
-                                [oz03-02.jpg]
+                                
 
    ni'o ca lo nu co'a vanci noi nu la .dorotis. co'a tatpi lo nu ve'u
    cadzu kei gi'e co'a kucli lo du'u .ei dy ma kau zvati ze'a lo nicte
@@ -4139,7 +4139,7 @@ fa'o
    gi'e sanga .i fau bo lo ne'a jubme cu culno lo kukte grute fa'u narge
    .e lo pesxu .e lo titnanba .e lo so'i drata ke xamgu cidja
 
-   [oz03-03.jpg]
+   
 
    ni'o lo prenu cu xendo rinsa la .dorotis. gi'e friti lo nu dy cu kansa
    py lo nu vacysai citka .i ki'u bo ti zdani lo pa cmima be lo cfurai be
@@ -4180,7 +4180,7 @@ fa'o
    kelci la .totos. gi'e lacpu lo rebla gi'e ge krixa gi cmila vau tai da
    poi la .dorotis. cu mutce lo ka se zdile ke'a .i la .totos. cu xamgu
    cinri lo ro prenu .i ki'u bo py cu pu no roi viska lo gerku
-                                [oz03-04.jpg]
+                                
 
    ni'o «lu ma ni darno la ri'ojme tcadu —sei lo nixli cu te preti— li'u»
 
@@ -4202,7 +4202,7 @@ fa'o
    bitmu .i je lo naldarno zo'u dy viska lo cpitepygau noi galtu zvati lo
    grana te zu'e lo nu fanta lo nu lo cipni cu jbibi'o lo makcu gurni
 
-   [oz03-05.jpg]
+   
 
    ni'o la .dorotis. cu cpanygau lo xejni'a lo xance gi'e pensi catlu la
    cpitepygau .i stedu cy fa lo cmalu dakli noi terse'a lo sudysrasu zi'e
@@ -4300,7 +4300,7 @@ fa'o
    fa lo nu lo ratcu zdani cu zvati lo sudysrasu .i je ty cu so'i roi
    fe'ucmo tai lo te nalxe'o fa'a la cpitepygau
 
-                                                             [oz03-06.jpg]
+                                                             
 
    ni'o «lu ko na se nabmi tu'a la .totos. —sei la .dorotis. fi lo ri
    cnino pendo cu cusku— .i ty cu no roi batci li'u»
@@ -4322,7 +4322,7 @@ fa'o
    ni'o ni'o vo mo'o
    lo pluta poi pagre lo ricfoi
 
-   [oz04-01.jpg]
+   
 
    ni'o ba za lo cacra be li su'o lo pluta cu co'a rufsu .i je lo nu cadzu
    cu co'a tai nandu ja'e lo nu la cpitepygau cu so'i roi tapfli lo pelxu
@@ -4355,7 +4355,7 @@ fa'o
    lo nu dy cu ba'o citka lo vacysai cu cusku— li'u» .i dy boi cy jungau
    ro da la .kanzas .e lo nu ro de bu'u grusi .e lo nu lo vilcarbi'e cu
    bevri dy lo vi cizra gugde pe la .oz.
-                                [oz04-03.jpg]
+                                
 
    ni'o la cpitepygau cu ralci tinju'i gi'e cusku «lu mi na jimpe lo du'u
    mu'i ma kau do djica lo nu cliva lo vi melbi gugde gi'e xruti lo sudga
@@ -4426,7 +4426,7 @@ fa'o
    mutce prenu .i ba za bo pa tolci'o korvo cu vofli jbibi'o mi .i je ba
    lo nu ralci catlu mi cu tsebi'o lo mi janco gi'e cusku di'e
 
-   [oz04-04.jpg]
+   
 
    ni'o «lu mi kucli lo du'u xu kau lo te cange pu jinvi lo du'u tcica be
    mi kakne fau lo nu tai juxre .i ro korvo poi na bebna cu viska lo nu do
@@ -4447,7 +4447,7 @@ fa'o
    la banli .oz. ba dunda lo besna mi ca lo nu mi'o tolcliva la ri'ojme
    tcadu li'u»
 
-                                                             [oz04-02.jpg]
+                                                             
 
    ni'o «lu mi pacna lo nu ja'a co'e kei —sei la .dorotis. cu stace cusku—
    ki'u lo nu do simlu lo ka djica carmi li'u»
@@ -4490,7 +4490,7 @@ fa'o
 
    ni'o ba za bo la cpitepygau cu klasti
 
-   [oz04-05.jpg]
+   
 
    ni'o «lu mi viska lo cmalu cmazda fa'a lo pritu be mi'o —sei cusku— .i
    zilzba lo tanbo jo'u lo jimca .i .au pei mi'o klama li'u»
@@ -4509,7 +4509,7 @@ fa'o
    ni'o ni'o mu mo'o
    lo nu nurgau la tinci mudypre
 
-   [oz05-01.jpg]
+   
 
    ni'o ca lo nu la .dorotis. cu cikybi'o kei lo solgu'i cu ca'a pagre lo
    tricu .i je la .totos. cu xa'o bartu gi'e ru'u jersi lo cipni jo'u lo
@@ -4603,7 +4603,7 @@ fa'o
    ni'o «lu da'i mi va'o lo nu do na klama cu ze'e va sanli —sei my cusku—
    .i ja'o ju'o do nurgau lo mi nunjmive .i lo nu do ti zvati cu jalge ma
    li'u»
-                                [oz05-04.jpg]
+                                
 
    ni'o «lu mi'a klama la ri'ojme tcadu te zu'e lo nu penmi la banli .oz.
    —sei dy spusku— .i je mi'a klasti bu'u lo do cmazda te zu'e lo nu zvati
@@ -4625,7 +4625,7 @@ fa'o
    nu do curmi lo nu mi kansa do cu klama la ri'ojme tcadu te zu'e lo nu
    cpedu lo ka la .oz. mi sidju li'u»
 
-   [oz05-02.jpg]
+   
 
    ni'o «lu .e'a ko kansa —sei la cpitepygau cu xendo cusku— li'u» .i je
    la .dorotis. cu jmina cusku lo se du'u da'i gleki lo nu se kansa my .i
@@ -4644,14 +4644,14 @@ fa'o
    pagre .i ku'i la tinci mudypre cu co'a gunka se pi'o lo ri ka'amru gi'e
    tai xamgu katna ja'e lo nu ba za ba'o gasnu tu'a lo vorme se va'u lo
    mulno bende
-                                [oz05-03.jpg]
+                                
 
    ni'o la .dorotis. cu ca lo nu by ca'o cadzu cu tai junri pensi ja'e lo
    nu dy na sanji ca je fe lo nu la cpitepygau cu tapflifa'u fi lo kevna
    gi'e gunro fa'a lo drata mlana be lo dargu .i je'u cy bilga lo ka
    cpesku fi dy fe lo nu sidju fi lo nu sa'irbi'o
 
-   [oz05-05.jpg]
+   
 
    ni'o «lu ki'u ma do na cadzu ru'u lo kevna —sei la tinci mudypre cu
    retsku— li'u»
@@ -4728,9 +4728,9 @@ fa'o
    mi spebi'o ny .i ru'a ny za'o xabju fi'o kansa lo laldo ninmu gi'e fau
    bo denpa lo nu mi klama ny
 
-                                                             [oz05-07.jpg]
+                                                             
 
-   [oz05-06.jpg]
+   
 
    ni'o «lu lo mi xadni cu pu tai gusycai bu'u lo solgu'i .i ja'e bo mi pu
    jgira zei mutce xy .i je ca ku na vajni fa lo nu da'i lo mi ka'amru cu
@@ -4778,7 +4778,7 @@ fa'o
    ni'o ni'o xa mo'o
    la tolvirnu cinfo
 
-   [oz06-02.jpg]
+   
 
    ni'o ze'a ku la .dorotis. .e lo ri kansa cu cadzu pa'o lo denmi ricfoi
    .i lo klaji cu fe'e za'o se gacri lo pelxu kitybli .i ku'i ky se gacri
@@ -4824,7 +4824,7 @@ fa'o
    lo nu batci lo gerku .i ca bo la .dorotis. fau lo nu xanka lo nu da'i
    la .totos. cu se catra kei .e lo nu na sanji lo ckape cu fa'a ca'u
    bajra gi'e xancrada'i se rai lo kamtsa gi'e ca bo krixa:
-                                [oz06-03.jpg]
+                                
 
    ni'o «lu ko na sai darsi lo nu batci la .totos .i .ei do ckeji lo nu do
    noi barda danlu cu batci lo uu cmalu gerku li'u»
@@ -4860,7 +4860,7 @@ fa'o
    ri'a fa'a ni'a muvdu fo lo mi trixe .i lo va cmalu danlu poi do tai
    nelci zei mutce cu mo li'u»
 
-   [oz06-01.jpg]
+   
 
    ni'o «lu me la .totos. ku noi gerku me mi moi —sei la .dorotis. cu
    spusku— li'u»
@@ -4914,7 +4914,7 @@ fa'o
 
    ni'o «lu ru'a go'i .i mi pu no roi catlu zukte fi lo nu facki —sei la
    cinfo cu spusku— li'u»
-                                [oz06-04.jpg]
+                                
 
    ni'o «lu mi klama la banli .oz. te zu'e lo nu cpedu fi .obu fe lo nu
    dunda lo besna mi —sei la cpitepygau cu te notci— .i ki'u bo lo mi
@@ -4997,7 +4997,7 @@ fa'o
    ni'o ni'o ze mo'o
    lo nu litru se ka'a la banli .oz.
 
-   [oz07-02.jpg]
+   
 
    ni'o lo ro da cu bilga lo ka ginka bu'u lo bartu ca lo ca nicte ni'a lo
    barda tricu poi nenri lo ricfoi .i ki'u bo no dinju cu jibni .i lo
@@ -5033,7 +5033,7 @@ fa'o
    te zu'e lo nu sipna kei kei te zu'e lo nu selgaigau dy lo sudga pezli
    .i py gasnu lo nu dy. glare je tagji kufra .i je dy. condi sipna co'u
    lo cerni
-                                [oz07-03.jpg]
+                                
 
    ni'o ca lo donri lo nixli cu jirgau lo ri flira lo cmalu ke se cinje
    cmari'e .i je ba za bo lo ro da cu co'a litru fa'a la ri'ojme tcadu
@@ -5047,7 +5047,7 @@ fa'o
    lo nu no lo litru ka'e cnita cpare .i ze'a lo mokca cu simlu lo ka nu
    lo nunli'u cu na ka'e na tolcfa
 
-   [oz07-04.jpg]
+   
 
    ni'o «lu .ei ma'a mo —sei la .dorotis. cu tolpacna cusku— li'u»
 
@@ -5100,9 +5100,9 @@ fa'o
    nu la cinfo ka'e surla .i ki'u bo lo barda nunplipe pe cy cu rinka lo
    nu tolcondi vasxu gi'e ta'irva'u tai tu'a lo barda gerku poi ba'o bajra
    ze'a lo dukse
-                                [oz07-07.jpg]
+                                
 
-   [oz07-05.jpg]
+   
 
    ni'o lo gunma cu facki lo du'u lo ricfoi bu'u lo vi mlana cu denmi
    mutce gi'e manku je badri se jvinu .i ca lo nu la cinfo ba'o surla kei
@@ -5156,7 +5156,7 @@ fa'o
    ni'o «lu ko sutra —sei la cpitepygau cu krixa— .i je'u mi'o ragve klama
    li'u»
 
-                                                             [oz07-01.jpg]
+                                                             
 
    ni'o ja'e bo la .dorotis. cu pa moi lo klama fau lo nu birka jgari la
    .totos .i la tinci mudypre cu se lidne .i la cinfo to'e ki'u nai lo nu
@@ -5176,7 +5176,7 @@ fa'o
    ra kinli jgalu .i ku'i ko sanli ne'a ti'a mi .i je mi ta ba damba ze'a
    lo nu mi jmive li'u»
 
-   [oz07-06.jpg]
+   
 
    ni'o «lu ko ze'i denpa —sei la cpitepygau cu cladu cusku— li'u» .i cy
    pu ca'o pensi lo du'u ma kau se zukte xagrai .i ca cpedu fi lo mudypre
@@ -5215,7 +5215,7 @@ fa'o
    mudypre cu bilga lo ka zbasu lo pinblo se va'u ma'a ja'e lo nu ma'a
    kakne lo ka fulta se ka'a lo ragve li'u»
 
-   [oz07-08.jpg]
+   
 
    ni'o ja'e bo la mudypre cu lebna lo ri ka'amru gi'e co'a katna lo cmalu
    tricu te zu'e lo nu zbasu lo pinblo .i ca lo nu my ca'o gunka kei la
@@ -5236,7 +5236,7 @@ fa'o
    ni'o ni'o bi mo'o
    lo mrockape ke makpapi foldi
 
-   [oz08-02.jpg]
+   
 
    ni'o lo ma'a cmalu bende be lo litru cu cikybi'o ca lo za'u moi cerni
    fau lo nu di'a se livla gi'e culno lo ka pacna .i je la .dorotis. cu
@@ -5262,7 +5262,7 @@ fa'o
    cu binxo lo ka tai condi kei ja'e lo nu lo clani grana cu na ka'e lamji
    lo loldi
 
-   [oz08-03.jpg]
+   
 
    ni'o «lu ti xlali —sei la tinci mudypre cu cusku— .i ki'u bo mi'o va'o
    lo nu na snada lo ka tolcliva lo tumla cu ba se bevri fi lo gugde pe la
@@ -5308,7 +5308,7 @@ fa'o
    ka limna se ka'a lo rirxe korbi gi'e lacpu lo pinblo kei lo nu do tagji
    jgari lo jipno be lo mi rebla li'u»
 
-   [oz08-04.jpg]
+   
 
    ni'o ja'e bo cy cu plipe lo djacu .i je la tinci mudypre cu tagji jgari
    lo ra rebla .i ba bo la cinfo cu co'a limna klama se rai lo kamvlipa
@@ -5332,7 +5332,7 @@ fa'o
    ni'o «lu xagrai lo se platu fa lo nu cadzu re'o lo rirxe korbi co'u lo
    nu mi'o di'a zvati lo dargu —sei la cinfo cu te notci— li'u»
 
-   [oz08-05.jpg]
+   
 
    ni'o ca lo nu lo gunma ba'o mo'u surla zo'u: la .dorotis. cu lebna lo
    ri lanka .i je gy co'a co'e re'o lo srasu ri'erkoi fa'a lo dargu poi lo

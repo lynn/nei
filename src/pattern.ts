@@ -1,6 +1,8 @@
+import type { PreparsedType } from "./preparse";
 import type { Selmaho, Token } from "./tokenize";
 
 export type Pattern =
+	| { type: "preparsed"; value: PreparsedType }
 	| { type: "among"; selmaho: Selmaho[] }
 	| { type: "notAmong"; selmaho: Selmaho[] }
 	| { type: "many"; pattern: Pattern; min: number }
@@ -47,15 +49,26 @@ export function endOfStream(): Pattern {
 	return { type: "end-of-stream" };
 }
 
-export const patternNumber = seq(
-	"PA",
-	many(among("PA", "BY", "TEI", "FOI", "LAU")),
+export function preparsed(type: PreparsedType): Pattern {
+	return { type: "preparsed", value: type };
+}
+
+export const patternNumber = preparsed("number");
+export const patternLerfuString = preparsed("lerfu-string");
+export const patternStm = preparsed("stm");
+export const patternJekJoik = either(preparsed("jek"), preparsed("joik"));
+export const patternStag = seq(
+	preparsed("stm"),
+	many(seq(patternJekJoik, preparsed("stm"))),
 );
-export const patternNumberOrLerfuString = many1(
-	among("PA", "BY", "TEI", "FOI", "LAU"),
+export const patternTm = either("FIhO", patternStm);
+
+export const patternNumberOrLerfuString = either(
+	patternNumber,
+	patternLerfuString,
 );
-export const patternPaMoi = seq(patternNumberOrLerfuString, "MOI");
 export const patternPaMai = seq(patternNumberOrLerfuString, "MAI");
+export const patternPaMoi = seq(patternNumberOrLerfuString, "MOI");
 
 export const patternVerb = seq(
 	many(among("NAhE", "KE", "SE")),
@@ -72,41 +85,6 @@ export const patternSumti = either(
 	seq(patternNumber, patternVerb),
 );
 
-export const patternTag = seq(
-	opt("NAhE"),
-	opt("SE"),
-	either(
-		among(
-			"BAI",
-			"CAhA",
-			"KI",
-			"CUhE",
-			"ZI",
-			"ZEhA",
-			"PU",
-			// "NAI",
-			"VA",
-			"MOhI",
-			"FAhA",
-			"VEhA",
-			"VIhA",
-			"FEhE",
-			"TAhE",
-			"ZAhO",
-		),
-		seq(patternNumber, "ROI"),
-	),
-	opt("NAI"),
-);
-
-// TODO: not quite... maybe this is just the wrong approach
-export const patternJekJoik = many1(among("NA", "SE", "JA", "JOI", "NAI"));
-
-export const patternStag = seq(
-	patternTag,
-	many(seq(patternJekJoik, patternTag)),
-);
-
 export function matchesPattern(
 	tokens: Token[],
 	index: number,
@@ -121,6 +99,10 @@ export function matchesPattern(
 	}
 
 	switch (pattern.type) {
+		case "preparsed":
+			return current?.preparsed?.type === pattern.value
+				? { end: index + 1 }
+				: undefined;
 		case "among":
 			return current !== undefined && pattern.selmaho.includes(current.selmaho)
 				? { end: index + 1 }

@@ -88,7 +88,7 @@ export function ShowParseResult({ output }: { output: ParseResult }) {
 				<TokenContext.Provider value={output.tokens}>
 					<TextBox text={output.text} />
 				</TokenContext.Provider>
-				<ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} />
+				{/* <ShowSnapshots tokens={output.tokens} snapshots={output.snapshots} /> */}
 			</div>
 		</div>
 	);

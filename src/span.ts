@@ -1,7 +1,7 @@
 import type { Span, TokenIndex } from "./grammar";
 import type { Token } from "./tokenize";
 
-type HasIndex = Span | Token | TokenIndex | undefined | HasIndex[];
+type HasIndex = Span | Token<string> | TokenIndex | undefined | HasIndex[];
 
 export function startOf(...spans: HasIndex[]): TokenIndex {
 	for (const span of spans) {
