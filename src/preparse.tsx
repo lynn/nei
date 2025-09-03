@@ -103,9 +103,16 @@ export class Preparser extends BaseParser<Selmaho> {
 			line: 1,
 			column: [0, 0],
 			erased: [],
-			sourceText: "asdf",
-			lexeme: "asdf",
+			sourceText: this.tokens
+				.slice(token.start, token.end + 1)
+				.map((x) => x.sourceText)
+				.join(" "),
+			lexeme: this.tokens
+				.slice(token.start, token.end + 1)
+				.map((x) => x.lexeme)
+				.join(" "),
 			indicators: [],
+			preparsed: token,
 		};
 	}
 
@@ -113,7 +120,7 @@ export class Preparser extends BaseParser<Selmaho> {
 		const result: Token<BigSelmaho>[] = [];
 
 		while (this.index < this.tokens.length) {
-			const token = this.nextToken();
+			const token = this.peekToken();
 			if (!token) break;
 
 			const namcu = this.tryParseNamcu();
@@ -160,8 +167,9 @@ export class Preparser extends BaseParser<Selmaho> {
 
 			if (!isSmallSelmaho(token.selmaho)) {
 				result.push(token as Token<BigSelmaho>);
+				this.index++;
 			} else {
-				throw new ParseError("Bad selmaho", token.index);
+				throw new ParseError(`Bad selmaho ${token.selmaho}`, token.index);
 			}
 		}
 		return result;

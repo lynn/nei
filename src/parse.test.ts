@@ -8,6 +8,13 @@ test.each([
 	".i mi gerku",
 	".ua ni'o ni'o broda ni'o brode .i brodo .ije broda brode",
 	`.i ze'a lo slolecydo'i mi'a surla sakli`,
+	`.i terbloga'a`,
+	`.i terbloga'a catke`,
+	`.i terbloga'a catke fa lo birka`,
+	`.i terbloga'a catke fa lo birka be lo cmaxli`,
+	`.i terbloga'a catke fa lo birka be lo cmaxli fau`,
+	`.i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre`,
+	`.i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre troci`,
 	`.i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre troci lo nu gidva`,
 ])("parses %s", (text) => {
 	const tokens = new Tokenizer({

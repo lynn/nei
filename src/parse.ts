@@ -38,7 +38,6 @@ import type {
 	Joik,
 	JoikJek,
 	LerfuString,
-	LerfuWord,
 	Linkargs,
 	Links,
 	Many,
@@ -109,17 +108,17 @@ import { BaseParser } from "./parse-base";
 import {
 	among,
 	either,
-	many1,
-	not,
 	opt,
 	patternPaMai,
 	patternPaMoi,
+	patternStag,
 	patternSumti,
 	patternSumti6,
+	patternTmStart,
 	patternVerb,
 	seq,
 } from "./pattern";
-import { Preparser, type BigSelmaho } from "./preparse";
+import { type BigSelmaho, Preparser } from "./preparse";
 import { spanOf } from "./span";
 import type { Selmaho, Token } from "./tokenize";
 
@@ -218,7 +217,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		const i = this.tryParseCmavo("I");
 		if (i === undefined) return undefined;
 		const jk = this.tryParseJoik() ?? this.tryParseJek();
-		const stag = this.isAhead(patternTagBo, "tags BO")
+		const stag = this.isAhead(seq(patternStag, "BO"), "stag BO")
 			? this.tryParseStag()
 			: undefined;
 		const bo = this.tryParseCmavoWithFrees("BO");
@@ -243,6 +242,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 			"type" in token.preparsed &&
 			token.preparsed.type === type
 		) {
+			this.index++;
 			return token.preparsed;
 		}
 		return undefined;
@@ -302,8 +302,12 @@ export class Parser extends BaseParser<BigSelmaho> {
 		const first = this.tryParseTem();
 		const rest: Item[] = [];
 		while (this.peekToken()?.selmaho === "I") {
-			const item = this.parseItem();
+			const item = this.tryParseItem();
+			if (item === undefined) break;
 			rest.push(item);
+			if (rest.length > 999) {
+				throw new Error("Paragraph too long");
+			}
 		}
 
 		return this.parsed("paragraph", {
@@ -315,11 +319,14 @@ export class Parser extends BaseParser<BigSelmaho> {
 		});
 	}
 
-	private parseItem(): Item {
+	private tryParseItem(): Item | undefined {
 		this.begin("item");
 		const i = this.tryParseCmavoWithFrees("I");
 		const tem = this.tryParseTem();
-		return this.parsed("item", {
+		if (i === undefined && tem === undefined) {
+			return undefined;
+		}
+		return this.parsed<Item>("item", {
 			type: "item",
 			...spanOf(i, tem),
 			i,
@@ -333,7 +340,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 			this.isNaVerbAhead() ||
 			this.isAhead(among("TUhE"), "tu'e") ||
 			this.isAhead(seq("NA", "KU"), "naku") ||
-			this.isTaggedVerbAhead() ||
+			this.isTagAhead() ||
 			this.isFaOrTagAhead()
 		) {
 			return this.parseStatement(true);
@@ -468,24 +475,28 @@ export class Parser extends BaseParser<BigSelmaho> {
 	}
 
 	private tryParseTag(): Tag | undefined {
-		return this.isStmAhead() ? this.parseTag() : undefined;
+		return this.isTagAhead() ? this.parseTag() : undefined;
 	}
 
 	private parseStatement3(allowFragment: boolean): Statement3 | Fragment {
+		const backtrack = this.index;
 		const tag = this.tryParseTag();
 		if (tag !== undefined) {
 			const tuhe = this.tryParseCmavoWithFrees("TUhE");
-			if (tuhe === undefined) throw new ParseError("expected TUhE");
-			const text1 = this.parseText1();
-			const tuhu = this.tryParseCmavoWithFrees("TUhU");
-			return {
-				type: "statement-3-tuhe",
-				...spanOf(tag, tuhe, text1, tuhu),
-				tag,
-				tuhe,
-				text1,
-				tuhu,
-			};
+			if (tuhe !== undefined) {
+				const text1 = this.parseText1();
+				const tuhu = this.tryParseCmavoWithFrees("TUhU");
+				return {
+					type: "statement-3-tuhe",
+					...spanOf(tag, tuhe, text1, tuhu),
+					tag,
+					tuhe,
+					text1,
+					tuhu,
+				};
+			} else {
+				this.index = backtrack;
+			}
 		}
 		const sentence = this.parseSentence(allowFragment);
 		if (sentence.type === "fragment") return sentence;
@@ -862,7 +873,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 
 		if (token?.selmaho === "JAI") {
 			const jai = this.tryParseCmavoWithFrees("JAI")!;
-			const tag = this.isTaggedVerbAhead() ? this.parseTag() : undefined;
+			const tag = this.isTagAhead() ? this.parseTag() : undefined;
 			const inner = this.parseTanruUnit2();
 			return {
 				type: "tu-jai",
@@ -1219,12 +1230,8 @@ export class Parser extends BaseParser<BigSelmaho> {
 		return this.isAhead(patternSumti, "sumti");
 	}
 
-	private isTaggedVerbAhead(): boolean {
-		const decision = this.isAhead(
-			seq(opt("NA"), patternTag, opt("NA"), patternVerb),
-			"(na) tag (na) verb",
-		);
-		return decision;
+	private isTagAhead(): boolean {
+		return this.isAhead(patternTmStart, "tag");
 	}
 
 	private parseTag(): Tag {
@@ -1264,12 +1271,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		if (this.isSumtiAhead()) {
 			return this.parseSumti();
 		}
-		if (
-			this.isAhead(
-				either("FA", "FIhO", seq(patternTag, not(patternVerb))),
-				"tag term",
-			)
-		) {
+		if (this.isAhead(either("FA", patternTmStart), "tag term")) {
 			return this.parseTagged();
 		}
 
@@ -1322,12 +1324,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		}
 		const cu =
 			headBridi.length() > 0 ? this.tryParseCmavoWithFrees("CU") : undefined;
-		if (
-			!this.isNaVerbAhead() &&
-			!this.isTaggedVerbAhead() &&
-			!cu &&
-			allowFragment
-		) {
+		if (!this.isNaVerbAhead() && !cu && allowFragment) {
 			return headBridi.asFragment();
 		}
 
@@ -1467,6 +1464,9 @@ export class Parser extends BaseParser<BigSelmaho> {
 			if (!term) break;
 			this.log(`Parsed term "${this.showSpan(term)}" in bridi-tail`, term);
 			terms.push(term);
+			if (terms.length > 999) {
+				throw new Error("Terms too long");
+			}
 		}
 
 		if (terms.length === 0) return undefined;

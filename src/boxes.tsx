@@ -217,7 +217,18 @@ export function Statement2Box({ statement2 }: { statement2: G.Statement2 }) {
 }
 
 export function Statement3Box({ statement3 }: { statement3: G.Statement3 }) {
-	return <SentenceBox sentence={statement3.sentence} />;
+	if (statement3.type === "statement-3-sentence") {
+		return <SentenceBox sentence={statement3.sentence} />;
+	} else {
+		return (
+			<div className="row">
+				{statement3.tag && <TagBox tag={statement3.tag} />}
+				<ShowSpan span={statement3.tuhe} />
+				<Text1Box text1={statement3.text1} />
+				{statement3.tuhu && <ShowSpan span={statement3.tuhu} />}
+			</div>
+		);
+	}
 }
 
 export function SubsentenceBox({

@@ -61,7 +61,7 @@ export const patternStag = seq(
 	preparsed("stm"),
 	many(seq(patternJekJoik, preparsed("stm"))),
 );
-export const patternTm = either("FIhO", patternStm);
+export const patternTmStart = either("FIhO", patternStm);
 
 export const patternNumberOrLerfuString = either(
 	patternNumber,
