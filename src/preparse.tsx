@@ -227,6 +227,7 @@ export class Preparser extends BaseParser<Selmaho> {
 		while (true) {
 			const next = this.tryParseLerfuWord() ?? this.tryParsePa();
 			if (!next) break;
+			rest.push(next);
 		}
 		return {
 			type: "lerfu-string",

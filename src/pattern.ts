@@ -78,6 +78,7 @@ export const patternVerb = seq(
 export const patternSumti6 = either(
 	seq("NAhE", "BO"),
 	among("LAhE", "KOhA", "BY", "LA", "LE", "LI", "QUOTE", "LU"),
+	patternLerfuString,
 );
 
 export const patternSumti = either(

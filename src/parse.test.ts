@@ -6,6 +6,8 @@ test.each([
 	".ua",
 	"mi",
 	".i mi gerku",
+	".i by gerku",
+	".i .a bu gerku",
 	".ua ni'o ni'o broda ni'o brode .i brodo .ije broda brode",
 	`.i ze'a lo slolecydo'i mi'a surla sakli`,
 	`.i terbloga'a`,
