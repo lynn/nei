@@ -10,14 +10,13 @@ test.each([
 	".i .a bu gerku",
 	".ua ni'o ni'o broda ni'o brode .i brodo .ije broda brode",
 	`.i ze'a lo slolecydo'i mi'a surla sakli`,
-	`.i terbloga'a`,
-	`.i terbloga'a catke`,
-	`.i terbloga'a catke fa lo birka`,
-	`.i terbloga'a catke fa lo birka be lo cmaxli`,
-	`.i terbloga'a catke fa lo birka be lo cmaxli fau`,
-	`.i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre`,
-	`.i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre troci`,
 	`.i terbloga'a catke fa lo birka be lo cmaxli fau lo nu tolcre troci lo nu gidva`,
+	`broda .i`,
+	`broda .i je`,
+	`ny. coi`,
+	`.i mi'a no roi kakne lo nu lumci lo dacti`,
+	`zi ca'a`,
+	`tu'e banzu`,
 ])("parses %s", (text) => {
 	const tokens = new Tokenizer({
 		cmevlaBrivlaMerger: false,
@@ -31,6 +30,7 @@ test.each([
 	".i lo lo prenu cu klama",
 	"mi klama do klama",
 	"kei mi klama",
+	"broda xi",
 ])("fails to parse %s", (text) => {
 	const tokens = new Tokenizer({
 		cmevlaBrivlaMerger: false,

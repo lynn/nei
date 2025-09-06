@@ -98,6 +98,7 @@ import type {
 	TanruUnit2,
 	TenseModal,
 	Term,
+	Terminator,
 	Terms,
 	Text,
 	Text1,
@@ -109,6 +110,7 @@ import {
 	among,
 	either,
 	opt,
+	patternNumberOrLerfuString,
 	patternPaMai,
 	patternPaMoi,
 	patternStag,
@@ -426,7 +428,9 @@ export class Parser extends BaseParser<BigSelmaho> {
 		while (true) {
 			const ijek = this.tryParseIjek();
 			if (!ijek) break;
-			const statement2 = this.parseStatement2(false);
+			const statement2 = this.isStatementAhead()
+				? this.parseStatement2(false)
+				: undefined;
 			rest.push({
 				type: "ijek-statement-2",
 				...spanOf(ijek, statement2),
@@ -443,7 +447,12 @@ export class Parser extends BaseParser<BigSelmaho> {
 	}
 
 	private isStatementAhead(): boolean {
-		return this.isNaVerbAhead() || this.isFaOrTagAhead() || this.isSumtiAhead();
+		return (
+			this.isNaVerbAhead() ||
+			this.isFaOrTagAhead() ||
+			this.isSumtiAhead() ||
+			this.isAhead("TUhE", "tu'e")
+		);
 	}
 
 	private parseStatement2(allowFragment: false): Statement2;
@@ -481,23 +490,20 @@ export class Parser extends BaseParser<BigSelmaho> {
 	private parseStatement3(allowFragment: boolean): Statement3 | Fragment {
 		const backtrack = this.index;
 		const tag = this.tryParseTag();
-		if (tag !== undefined) {
-			const tuhe = this.tryParseCmavoWithFrees("TUhE");
-			if (tuhe !== undefined) {
-				const text1 = this.parseText1();
-				const tuhu = this.tryParseCmavoWithFrees("TUhU");
-				return {
-					type: "statement-3-tuhe",
-					...spanOf(tag, tuhe, text1, tuhu),
-					tag,
-					tuhe,
-					text1,
-					tuhu,
-				};
-			} else {
-				this.index = backtrack;
-			}
+		const tuhe = this.tryParseCmavoWithFrees("TUhE");
+		if (tuhe !== undefined) {
+			const text1 = this.parseText1();
+			const tuhu = this.tryParseTerminator("TUhU");
+			return {
+				type: "statement-3-tuhe",
+				...spanOf(tag, tuhe, text1, tuhu),
+				tag,
+				tuhe,
+				text1,
+				tuhu,
+			};
 		}
+		this.index = backtrack;
 		const sentence = this.parseSentence(allowFragment);
 		if (sentence.type === "fragment") return sentence;
 		return {
@@ -821,7 +827,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		if (token?.selmaho === "KE") {
 			const ke = this.tryParseCmavoWithFrees("KE")!;
 			const selbri3 = this.parseSelbri3();
-			const kehe = this.tryParseCmavoWithFrees("KEhE");
+			const kehe = this.tryParseTerminator("KEhE");
 			return {
 				type: "tu-ke",
 				...spanOf(ke, selbri3, kehe),
@@ -834,7 +840,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		if (token?.selmaho === "ME") {
 			const me = this.tryParseCmavoWithFrees("ME")!;
 			const sumti = this.parseSumti();
-			const mehu = this.tryParseCmavoWithFrees("MEhU");
+			const mehu = this.tryParseTerminator("MEhU");
 			const moi = this.tryParseCmavoWithFrees("MOI");
 			return {
 				type: "tu-me",
@@ -1013,7 +1019,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 
 	private parseQuantifier(): Quantifier {
 		const number = this.tryParseNamcu()!;
-		const boi = this.tryParseCmavoWithFrees("BOI");
+		const boi = this.tryParseTerminator("BOI");
 		return {
 			type: "quantifier",
 			...spanOf(number, boi),
@@ -1043,7 +1049,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		if (!goi) return undefined;
 		const term = this.tryParseTerm();
 		if (!term) return undefined;
-		const gehu = this.tryParseCmavoWithFrees("GEhU");
+		const gehu = this.tryParseTerminator("GEhU");
 		return {
 			type: "goi-clause",
 			...spanOf(goi, term, gehu),
@@ -1060,7 +1066,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		const noi = this.tryParseCmavoWithFrees("NOI");
 		if (!noi) return undefined;
 		const subsentence = this.parseSubsentence();
-		const kuho = this.tryParseCmavoWithFrees("KUhO");
+		const kuho = this.tryParseTerminator("KUhO");
 		return {
 			type: "noi-clause",
 			...spanOf(noi, subsentence, kuho),
@@ -1083,7 +1089,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 
 		if (token.selmaho === "lerfu-string") {
 			const lerfuString = this.tryParseLerfuString()!;
-			const boi = this.tryParseCmavoWithFrees("BOI");
+			const boi = this.tryParseTerminator("BOI");
 			return {
 				type: "sumti-6-lerfu",
 				...spanOf(lerfuString, boi),
@@ -1105,7 +1111,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		if (token.selmaho === "LU") {
 			const lu = this.nextToken()!;
 			const text = this.parseText(false);
-			const lihu = this.tryParseCmavoWithFrees("LIhU");
+			const lihu = this.tryParseTerminator("LIhU");
 			return {
 				type: "sumti-6-lu",
 				...spanOf(lu, text, lihu),
@@ -1118,7 +1124,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		if (token.selmaho === "LAhE") {
 			const lahe = this.tryParseCmavoWithFrees("LAhE")!;
 			const sumti = this.parseSumti();
-			const luhu = this.tryParseCmavoWithFrees("LUhU");
+			const luhu = this.tryParseTerminator("LUhU");
 			return {
 				type: "sumti-6-lahe",
 				...spanOf(lahe, sumti, luhu),
@@ -1131,7 +1137,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		if (token.selmaho === "LE") {
 			const le = this.tryParseCmavoWithFrees("LE")!;
 			const sumtiTail = this.parseSumtiTail();
-			const ku = this.tryParseCmavoWithFrees("KU");
+			const ku = this.tryParseTerminator("KU");
 			return {
 				type: "sumti-6-le",
 				...spanOf(le, sumtiTail, ku),
@@ -1144,7 +1150,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 		if (token.selmaho === "LI") {
 			const li = this.tryParseCmavoWithFrees("LI")!;
 			const mex = this.parseMex();
-			const loho = this.tryParseCmavoWithFrees("LOhO");
+			const loho = this.tryParseTerminator("LOhO");
 			return {
 				type: "sumti-6-li",
 				...spanOf(li, mex, loho),
@@ -1171,7 +1177,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 			} else {
 				// TODO: DRY?
 				const sumtiTail = this.parseSumtiTail();
-				const ku = this.tryParseCmavoWithFrees("KU");
+				const ku = this.tryParseTerminator("KU");
 				return {
 					type: "sumti-6-le",
 					...spanOf(la, sumtiTail, ku),
@@ -1479,7 +1485,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 	}
 
 	protected tryParseCmavoWithFrees(
-		selmaho: Selmaho,
+		selmaho: BigSelmaho,
 	): CmavoWithFrees | undefined {
 		const token = this.peekToken();
 		if (token && token.selmaho === selmaho) {
@@ -1489,6 +1495,20 @@ export class Parser extends BaseParser<BigSelmaho> {
 				...spanOf(token, frees),
 				type: "cmavo-with-frees",
 				cmavo: token.index,
+				frees,
+			};
+		}
+		return undefined;
+	}
+
+	protected tryParseTerminator(selmaho: BigSelmaho): Terminator | undefined {
+		const terminator = this.tryParseCmavo(selmaho);
+		const frees = this.parseFrees();
+		if (terminator !== undefined || frees.length > 0) {
+			return {
+				type: "terminator",
+				...spanOf(terminator, frees),
+				terminator,
 				frees,
 			};
 		}
@@ -1635,7 +1655,7 @@ export class Parser extends BaseParser<BigSelmaho> {
 			};
 		}
 
-		if (token?.selmaho === "XI") {
+		if (this.isAhead(seq("XI", patternNumberOrLerfuString), "xi")) {
 			const xi = this.tryParseCmavoWithFrees("XI")!;
 			const ordinal = this.tryParseLerfuString() ?? this.tryParseNamcu()!;
 			const boi = this.tryParseCmavo("BOI");

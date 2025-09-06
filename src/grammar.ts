@@ -142,7 +142,7 @@ export interface Statement3Tuhe extends Span {
 	tag: Tag | undefined;
 	tuhe: CmavoWithFrees;
 	text1: Text1;
-	tuhu: CmavoWithFrees | undefined;
+	tuhu: Terminator | undefined;
 }
 
 /// fragment =
@@ -363,7 +363,7 @@ export interface Sumti6Lahe extends Span {
 	lahe: CmavoWithFrees;
 	// relative clauses here feels like crimes. not condoning it
 	sumti: Sumti<Floating>;
-	luhu: CmavoWithFrees | undefined;
+	luhu: Terminator | undefined;
 }
 
 export interface Sumti6Nahebo extends Span {
@@ -372,7 +372,7 @@ export interface Sumti6Nahebo extends Span {
 	bo: CmavoWithFrees;
 	// relative clauses here feels like crimes. not condoning it
 	sumti: Sumti<Floating>;
-	luhu: CmavoWithFrees | undefined;
+	luhu: Terminator | undefined;
 }
 
 export interface Sumti6Koha extends Span {
@@ -383,7 +383,7 @@ export interface Sumti6Koha extends Span {
 export interface Sumti6Lerfu extends Span {
 	type: "sumti-6-lerfu";
 	lerfuString: LerfuString;
-	boi: CmavoWithFrees | undefined;
+	boi: Terminator | undefined;
 }
 
 export interface Sumti6La extends Span {
@@ -398,14 +398,14 @@ export interface Sumti6Le extends Span {
 	type: "sumti-6-le";
 	le: CmavoWithFrees;
 	sumtiTail: SumtiTail;
-	ku: CmavoWithFrees | undefined;
+	ku: Terminator | undefined;
 }
 
 export interface Sumti6Li extends Span {
 	type: "sumti-6-li";
 	li: CmavoWithFrees;
 	mex: Mex;
-	loho: CmavoWithFrees | undefined;
+	loho: Terminator | undefined;
 }
 
 export interface Sumti6Quote extends Span {
@@ -418,7 +418,7 @@ export interface Sumti6Lu extends Span {
 	type: "sumti-6-lu";
 	lu: TokenIndex;
 	text: Text;
-	lihu: CmavoWithFrees | undefined;
+	lihu: Terminator | undefined;
 }
 
 /// sumti-tail = [sumti-6 [relative-clauses]] sumti-tail-1 | relative-clauses sumti-tail-1
@@ -453,7 +453,7 @@ export interface GoiClause extends Span {
 	antecedent: Span | undefined;
 	goi: CmavoWithFrees;
 	term: Term<Floating>;
-	gehu: CmavoWithFrees | undefined;
+	gehu: Terminator | undefined;
 }
 
 export interface NoiClause extends Span {
@@ -461,7 +461,7 @@ export interface NoiClause extends Span {
 	antecedent: Span | undefined;
 	noi: CmavoWithFrees;
 	subsentence: Subsentence;
-	kuho: CmavoWithFrees | undefined;
+	kuho: Terminator | undefined;
 }
 
 export interface ZiheClause extends Span {
@@ -634,14 +634,14 @@ export interface TuKe extends Span {
 	type: "tu-ke";
 	ke: CmavoWithFrees;
 	selbri3: Selbri3;
-	kehe: CmavoWithFrees | undefined;
+	kehe: Terminator | undefined;
 }
 
 export interface TuMe extends Span {
 	type: "tu-me";
 	me: CmavoWithFrees;
 	sumti: Sumti<Floating>;
-	mehu: CmavoWithFrees | undefined;
+	mehu: Terminator | undefined;
 	moi: CmavoWithFrees | undefined;
 }
 
@@ -705,7 +705,7 @@ export interface BeiLink extends Span {
 export interface Quantifier extends Span {
 	type: "quantifier";
 	number: Namcu;
-	boi: CmavoWithFrees | undefined;
+	boi: Terminator | undefined;
 }
 
 /// mex = mex-1 [operator mex-1] ... | FUhA # rp-expression
@@ -1362,6 +1362,12 @@ export interface FreeXi extends Span {
 export interface CmavoWithFrees extends Span {
 	type: "cmavo-with-frees";
 	cmavo: TokenIndex;
+	frees: Free[];
+}
+
+export interface Terminator extends Span {
+	type: "terminator";
+	terminator?: TokenIndex;
 	frees: Free[];
 }
 

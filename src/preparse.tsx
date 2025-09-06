@@ -123,6 +123,12 @@ export class Preparser extends BaseParser<Selmaho> {
 			const token = this.peekToken();
 			if (!token) break;
 
+			const stm = this.tryParseSimpleTenseModal();
+			if (stm) {
+				result.push(this.toToken(stm));
+				continue;
+			}
+
 			const namcu = this.tryParseNamcu();
 			if (namcu) {
 				result.push(this.toToken(namcu));
@@ -144,12 +150,6 @@ export class Preparser extends BaseParser<Selmaho> {
 			const jek = this.tryParseJek();
 			if (jek) {
 				result.push(this.toToken(jek));
-				continue;
-			}
-
-			const stm = this.tryParseSimpleTenseModal();
-			if (stm) {
-				result.push(this.toToken(stm));
 				continue;
 			}
 
@@ -433,7 +433,7 @@ export class Preparser extends BaseParser<Selmaho> {
 		let end: number | undefined;
 
 		const zi = this.tryParseCmavo("ZI");
-		if (zi) {
+		if (zi !== undefined) {
 			start ??= zi;
 			end = zi;
 		}
