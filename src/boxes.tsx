@@ -681,15 +681,65 @@ export function QuantifierBox({ span }: { span: G.Quantifier }) {
 }
 
 export function Sumti1Box({ span }: { span: G.Sumti1 }) {
-	return <Sumti2Box span={span.sumti2} />;
+	return (
+		<div className="row">
+			<Sumti2Box span={span.first} />
+			{span.ekKeSumti && (
+				<>
+					<div className="box col bg-gray-50">
+						<b>conjunction</b>
+						<div className="row">
+							<ShowSpan span={span.ekKeSumti.ek} />
+							<ShowSpan span={span.ekKeSumti.stag} />
+							<ShowSpan span={span.ekKeSumti.ke} />
+						</div>
+					</div>
+					<SumtiBox sumti={span.ekKeSumti.sumti} />
+					<ShowSpan span={span.ekKeSumti.kehe} />
+				</>
+			)}
+		</div>
+	);
 }
 
 export function Sumti2Box({ span }: { span: G.Sumti2 }) {
-	return <Sumti3Box span={span.sumti3} />;
+	return (
+		<div className="row">
+			<Sumti3Box span={span.first} />
+			{span.rest.map((r) => (
+				<div className="row">
+					<div className="box col bg-gray-50">
+						<b>conjunction</b>
+						<div className="row">
+							<ShowSpan span={r.joikEk} />
+						</div>
+					</div>
+					<Sumti3Box span={r.sumti3} />
+				</div>
+			))}
+		</div>
+	);
 }
 
 export function Sumti3Box({ span }: { span: G.Sumti3 }) {
-	return <Sumti4Box span={span.sumti4} />;
+	return (
+		<div className="row">
+			<Sumti4Box span={span.first} />
+			{span.ekBoSumti3 && (
+				<div className="row">
+					<div className="box col bg-gray-50">
+						<b>conjunction</b>
+						<div className="row">
+							<ShowSpan span={span.ekBoSumti3.ek} />
+							<ShowSpan span={span.ekBoSumti3.stag} />
+							<ShowSpan span={span.ekBoSumti3.bo} />
+						</div>
+					</div>
+					<Sumti3Box span={span.ekBoSumti3.sumti3} />
+				</div>
+			)}
+		</div>
+	);
 }
 
 export function Sumti4Box({ span }: { span: G.Sumti4 }) {

@@ -16,6 +16,8 @@ import type {
 	Cmene,
 	Coinai,
 	Ek,
+	EkBoSumti3,
+	EkKeSumti,
 	EkWithFrees,
 	Floating,
 	Fragment,
@@ -36,6 +38,8 @@ import type {
 	JkBoSelbri5,
 	JkSelbri5,
 	Joik,
+	JoikEk,
+	JoikEkSumti3,
 	JoikJek,
 	LerfuString,
 	Linkargs,
@@ -118,6 +122,7 @@ import {
 	patternSumti6,
 	patternTmStart,
 	patternVerb,
+	preparsed,
 	seq,
 } from "./pattern";
 import { type BigSelmaho, Preparser } from "./preparse";
@@ -941,29 +946,109 @@ export class Parser extends BaseParser<BigSelmaho> {
 	}
 
 	private parseSumti1(): Sumti1 {
-		const sumti2 = this.parseSumti2();
+		const first = this.parseSumti2();
+		const ekKeSumti = this.isAhead(
+			seq(preparsed("ek"), opt(patternStag), "BO"),
+			"ek",
+		)
+			? this.parseEkKeSumti()
+			: undefined;
 		return {
 			type: "sumti-1",
-			...spanOf(sumti2),
-			sumti2,
+			...spanOf(first, ekKeSumti),
+			first,
+			ekKeSumti,
 		};
 	}
 
+	private parseEkKeSumti(): EkKeSumti {
+		const ek = this.parseEk();
+		const stag = this.tryParseStag();
+		const ke = this.tryParseCmavoWithFrees("KE")!;
+		const sumti = this.parseSumti();
+		const kehe = this.tryParseTerminator("KEhE");
+		return {
+			type: "ek-ke-sumti",
+			...spanOf(ek, stag, ke, sumti, kehe),
+			ek,
+			stag,
+			ke,
+			sumti,
+			kehe,
+		};
+	}
+
+	private parseEk(): Ek {
+		const ek = this.tryParsePreparsed("ek") as Ek;
+		if (ek === undefined) {
+			throw new ParseError("Expected ek", this.index);
+		}
+		return ek;
+	}
+
 	private parseSumti2(): Sumti2 {
-		const sumti3 = this.parseSumti3();
+		const first = this.parseSumti3();
+		const rest: JoikEkSumti3[] = [];
+		while (true) {
+			const joikEk = this.tryParseJoikEk();
+			if (joikEk === undefined) break;
+			const sumti3 = this.parseSumti3();
+			rest.push({
+				type: "joik-ek-sumti-3",
+				...spanOf(joikEk, sumti3),
+				joikEk,
+				sumti3,
+			});
+		}
 		return {
 			type: "sumti-2",
-			...spanOf(sumti3),
+			...spanOf(first, rest),
+			first,
+			rest,
+		};
+	}
+
+	private tryParseJoikEkSumti3(): JoikEkSumti3 | undefined {
+		const joikEk = this.tryParseJoikEk();
+		if (joikEk === undefined) return undefined;
+		const sumti3 = this.parseSumti3();
+		return {
+			type: "joik-ek-sumti-3",
+			...spanOf(joikEk, sumti3),
+			joikEk,
 			sumti3,
 		};
 	}
 
 	private parseSumti3(): Sumti3 {
-		const sumti4 = this.parseSumti4();
+		const first = this.parseSumti4();
+
+		const ekBoSumti3 = this.isAhead(
+			seq(either(preparsed("ek"), preparsed("joik")), opt(patternStag), "BO"),
+			"stag BO",
+		)
+			? this.parseEkBoSumti3()
+			: undefined;
 		return {
 			type: "sumti-3",
-			...spanOf(sumti4),
-			sumti4,
+			...spanOf(first, ekBoSumti3),
+			first,
+			ekBoSumti3,
+		};
+	}
+
+	private parseEkBoSumti3(): EkBoSumti3 {
+		const ek = this.tryParseEk()!;
+		const stag = this.tryParseStag();
+		const bo = this.tryParseCmavoWithFrees("BO")!;
+		const sumti3 = this.parseSumti3();
+		return {
+			type: "ek-bo-sumti-3",
+			...spanOf(ek, stag, bo, sumti3),
+			ek,
+			stag,
+			bo,
+			sumti3,
 		};
 	}
 
@@ -1686,6 +1771,18 @@ export class Parser extends BaseParser<BigSelmaho> {
 		const frees = this.parseFrees();
 		return {
 			type: "joik-jek",
+			jk,
+			frees,
+			...spanOf(jk, frees),
+		};
+	}
+
+	protected tryParseJoikEk(): JoikEk | undefined {
+		const jk = this.tryParseJoik() ?? this.tryParseEk();
+		if (!jk) return undefined;
+		const frees = this.parseFrees();
+		return {
+			type: "joik-ek",
 			jk,
 			frees,
 			...spanOf(jk, frees),

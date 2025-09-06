@@ -288,24 +288,47 @@ export interface Sumti<Role> extends Span {
 
 export interface Sumti1 extends Span {
 	type: "sumti-1";
-	sumti2: Sumti2;
-	// TODO: [(ek | joik) [stag] KE # sumti /KEhE#/]
+	first: Sumti2;
+	ekKeSumti: EkKeSumti | undefined;
+}
+
+export interface EkKeSumti extends Span {
+	type: "ek-ke-sumti";
+	ek: Ek;
+	stag: Stag | undefined;
+	ke: CmavoWithFrees;
+	sumti: Sumti<Floating>;
+	kehe: Terminator | undefined;
 }
 
 /// sumti-2 = sumti-3 [joik-ek sumti-3] ...
 
 export interface Sumti2 extends Span {
 	type: "sumti-2";
+	first: Sumti3;
+	rest: JoikEkSumti3[];
+}
+
+export interface JoikEkSumti3 extends Span {
+	type: "joik-ek-sumti-3";
+	joikEk: JoikEk;
 	sumti3: Sumti3;
-	// TODO: [joik-ek sumti-3]...
 }
 
 /// sumti-3 = sumti-4 [(ek | joik) [stag] BO # sumti-3]
 
 export interface Sumti3 extends Span {
 	type: "sumti-3";
-	sumti4: Sumti4;
-	// TODO: [(ek | joik) [stag] BO # sumti-3]
+	first: Sumti4;
+	ekBoSumti3: EkBoSumti3 | undefined;
+}
+
+export interface EkBoSumti3 extends Span {
+	type: "ek-bo-sumti-3";
+	ek: Ek;
+	stag: Stag | undefined;
+	bo: CmavoWithFrees;
+	sumti3: Sumti3;
 }
 
 /// sumti-4 = sumti-5 | gek sumti gik sumti-4
