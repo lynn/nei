@@ -1,0 +1,6 @@
+[submodule "lidysisku"]
+	path = lidysisku
+	url = https://github.com/lynn/lidysisku
+[submodule "latkerlo-jvotci"]
+	path = latkerlo-jvotci
+	url = git@github.com:lynn/latkerlo-jvotci.git
